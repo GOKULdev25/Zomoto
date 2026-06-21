@@ -1,0 +1,43 @@
+# ── Secrets ─────────────────────────────────────────────
+.env
+
+# ── Python cache ─────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# ── Virtual environments ──────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── Streamlit ─────────────────────────────────────────────
+.streamlit/
+
+# ── HuggingFace dataset cache ─────────────────────────────
+~/.cache/huggingface/
+.cache/
+
+# ── IDE / Editor ──────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── OS files ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Temp / Cache ──────────────────────────────────────
+.npm-cache/
+.tmp/
+
+# ── Large data files (too big for GitHub) ─────────────────
+data/*.csv
+
+# ── Test / Coverage ───────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/

@@ -1,0 +1,12 @@
+{
+  "name": "zomoto",
+  "version": "1.0.0",
+  "description": "Zomoto AI Restaurant Recommendation System",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && .\\node_modules\\.bin\\vite.cmd",
+    "frontend": "cd frontend && .\\node_modules\\.bin\\vite.cmd",
+    "backend": "python -m uvicorn app:app --port 8000 --reload --log-level info",
+    "install:frontend": "cd frontend && npm install --cache E:\\Zomoto\\.npm-cache"
+  }
+}

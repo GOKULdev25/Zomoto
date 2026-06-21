@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Zomoto - Your Next Great Meal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#00201e",
+                        "primary": "#ffb3b1",
+                        "secondary-fixed-dim": "#ffb59d",
+                        "on-background": "#f9dcda",
+                        "tertiary-container": "#32a099",
+                        "background": "#1e0f0f",
+                        "secondary": "#ffb59d",
+                        "surface-tint": "#ffb3b1",
+                        "outline-variant": "#5b403f",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "on-primary-fixed": "#410007",
+                        "on-primary": "#680011",
+                        "surface-container": "#2c1b1b",
+                        "on-tertiary": "#003734",
+                        "surface-container-highest": "#423030",
+                        "on-secondary-fixed-variant": "#832600",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#bb162c",
+                        "surface-variant": "#423030",
+                        "surface-dim": "#1e0f0f",
+                        "surface-container-low": "#271717",
+                        "surface": "#1e0f0f",
+                        "secondary-fixed": "#ffdbd0",
+                        "tertiary": "#71d7cf",
+                        "surface-bright": "#473534",
+                        "surface-container-high": "#372625",
+                        "outline": "#ab8987",
+                        "primary-fixed-dim": "#ffb3b1",
+                        "inverse-surface": "#f9dcda",
+                        "primary-fixed": "#ffdad8",
+                        "on-primary-fixed-variant": "#92001c",
+                        "on-primary-container": "#5b000e",
+                        "surface-container-lowest": "#180a0a",
+                        "on-tertiary-container": "#00302d",
+                        "on-secondary-container": "#ffddd2",
+                        "on-surface": "#f9dcda",
+                        "secondary-container": "#b83900",
+                        "on-secondary": "#5d1900",
+                        "inverse-on-surface": "#3e2c2b",
+                        "on-tertiary-fixed-variant": "#00504c",
+                        "primary-container": "#ff535a",
+                        "on-error": "#690005",
+                        "tertiary-fixed-dim": "#71d7cf",
+                        "on-surface-variant": "#e4bebc",
+                        "on-secondary-fixed": "#390c00",
+                        "tertiary-fixed": "#8ef4eb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-max": "1280px",
+                        "base": "4px",
+                        "lg": "48px",
+                        "xl": "80px",
+                        "gutter": "24px",
+                        "md": "24px",
+                        "sm": "16px",
+                        "xs": "8px"
+                    },
+                    "fontFamily": {
+                        "hero-display-mobile": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "hero-display": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "hero-display-mobile": ["40px", {"lineHeight": "1.1", "letterSpacing": "-1.5px", "fontWeight": "800"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.5px", "fontWeight": "700"}],
+                        "hero-display": ["56px", {"lineHeight": "1.1", "letterSpacing": "-2px", "fontWeight": "800"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "500"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(30, 15, 15, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #ffb3b1, #ffb59d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-[#0D0D0D] bg-gradient-to-b from-[#0D0D0D] to-[#141414] text-on-background font-body-md min-h-screen overflow-hidden flex flex-col relative">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-lg border-b border-white/10 shadow-xl">
+<div class="flex justify-between items-center px-gutter h-16 w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-sm">
+<img alt="Zomoto Logo" class="h-8 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCs5FyPCapZT-pELnc8iAE6eLuHB0J7XhlcYNmPSVawdexFEHdVuVksmoEo2T9YazE6Y0mydAEi2lLBmyDlRHbzfARRb2-KLKe-phm4pogSyaIh5V_aSByqVz9KZyoYj3sKXg6dvS3NpKiplusv2jTS1NymBQtaZhMQfMpeBerSfcBgzo4CTaHINxNIOCQ8s6nItXIT7a6a_SIs5qnjXnWgZ7B4x6LHj43i9Av-h5XY0_oyRKYxyHfEOX91qk6GRe5fJpWHgChoKU3o"/>
+<span class="font-hero-display text-headline-lg font-extrabold text-primary tracking-tighter">Zomoto</span>
+</div>
+<div class="hidden">search_bar</div>
+<div class="flex items-center gap-md">
+<button class="text-on-surface-variant hover:text-primary transition-colors duration-200 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sensors</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Layout -->
+<div class="flex-1 flex pt-16 h-screen relative z-10">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col p-md gap-xs overflow-y-auto bg-surface-container-low/60 backdrop-blur-xl border-r border-white/5 w-80 h-[calc(100vh-64px)] z-20 shrink-0">
+<div class="mb-lg mt-md">
+<h2 class="font-headline-md text-headline-md text-primary">Fine Dining Filter</h2>
+<p class="text-on-surface-variant mt-xs flex items-center gap-xs text-sm">
+<span class="material-symbols-outlined text-secondary text-sm">auto_awesome</span>
+                AI-Powered Discovery
+            </p>
+</div>
+<!-- Empty Search Form -->
+<div class="flex flex-col gap-md flex-1">
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-sm flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary transition-colors">search</span>
+</div>
+<input class="w-full bg-surface/50 border border-white/10 rounded-xl py-sm pl-xl pr-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all shadow-inner backdrop-blur-md" placeholder="What are you craving?" type="text"/>
+</div>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-sm flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary transition-colors">location_on</span>
+</div>
+<input class="w-full bg-surface/50 border border-white/10 rounded-xl py-sm pl-xl pr-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all shadow-inner backdrop-blur-md" placeholder="Location..." type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-sm mt-sm">
+<button class="flex flex-col items-center justify-center p-sm rounded-xl border border-white/5 bg-surface/30 hover:bg-surface-variant/50 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant mb-xs">restaurant</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Cuisine</span>
+</button>
+<button class="flex flex-col items-center justify-center p-sm rounded-xl border border-white/5 bg-surface/30 hover:bg-surface-variant/50 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant mb-xs">payments</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Budget</span>
+</button>
+<button class="flex flex-col items-center justify-center p-sm rounded-xl border border-white/5 bg-surface/30 hover:bg-surface-variant/50 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant mb-xs">star</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Rating</span>
+</button>
+<button class="flex flex-col items-center justify-center p-sm rounded-xl border border-white/5 bg-surface/30 hover:bg-surface-variant/50 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant mb-xs">add_circle</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Extras</span>
+</button>
+</div>
+</div>
+<button class="w-full bg-[#E23744] hover:bg-primary-container text-white py-sm rounded-xl font-label-md text-label-md transition-colors mt-auto shadow-lg shadow-primary-container/20">
+            Find Tables
+        </button>
+</aside>
+<!-- Main Panel -->
+<main class="flex-1 flex flex-col justify-center items-center p-lg relative overflow-hidden">
+<div class="text-center z-20 max-w-2xl mb-xl">
+<h1 class="font-hero-display text-hero-display-mobile md:text-hero-display text-on-surface mb-sm">
+                Your next <span class="gradient-text">great meal</span> is one search away.
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-lg mx-auto">
+                Discover curated culinary experiences, tailored to your tastes.
+            </p>
+</div>
+<!-- Fanned Cards Preview (Static) -->
+<div class="relative w-full max-w-3xl h-96 flex justify-center items-center mt-lg z-10">
+<!-- Card 1 (Left) -->
+<div class="absolute glass-panel rounded-xl w-64 h-80 p-md flex flex-col transform -rotate-12 -translate-x-36 translate-y-4 shadow-2xl">
+<div class="w-full h-32 rounded-lg bg-surface-container-highest mb-sm overflow-hidden relative">
+<div class="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent z-10"></div>
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5WKHMGlYqPI5LD5hMZ41Ir1SZL7hwkFmvTOSxFGu60v6u_6emlN6gTgzd5YVntlbWtAHOuOOvVpvrkC1AfFNPb1LRCajRT4YUGS0pJCgCjAiVb5lwLyh-Lyy5Afq3-KJuisnTKwp6VuDTwb9fgFaKvjCkgF9Qm0A2NcxMzuQWRoUn7Bk1NPOcxFZ5LuNFYWcfv_etNrduRtIFyWu0_9RdxTChotgs36tKS3f9SvhkPHw0La52313ruD618cMujA9yR37hcaTwvYNq"/>
+</div>
+<div class="flex justify-between items-start mb-xs">
+<h3 class="font-headline-md text-lg font-bold text-on-surface">Toit</h3>
+<div class="flex items-center gap-1 bg-surface-variant px-2 py-1 rounded-full">
+<span class="material-symbols-outlined text-[14px] text-secondary">star</span>
+<span class="font-label-sm text-xs text-on-surface">4.8</span>
+</div>
+</div>
+<p class="font-body-md text-sm text-on-surface-variant line-clamp-2">Microbrewery &amp; Wood-fired pizzas.</p>
+</div>
+<!-- Card 2 (Center - Top) -->
+<div class="absolute glass-panel rounded-xl w-72 h-88 p-md flex flex-col transform z-20 shadow-2xl border-primary/20">
+<div class="w-full h-40 rounded-lg bg-surface-container-highest mb-sm overflow-hidden relative">
+<div class="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent z-10"></div>
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiQ-5YLaXp8BlhIRUr2LH17A3pwkpWRr0ZWD_tToPSVjoMLZv2RBLLwH9GuHvPFaurYIOctF4q1rC-cnNCCpwtrtlvqwPhzZY2FjvlNR1TQTwi8zDGh7Ru_niaOQqger_ZCDqIwdXzP7VMskYw2XBoHV1TcRrZcYrCFg0uD4gL2xkebTmuDV25aFmBNCw5adtgvMBtNC42vy-rFZM-VkNtJDdrFRIUinnZoQXtVFsv-6BZg63gJ2Z6ZI0iY9iZvBJUjZHE4-kDbs17"/>
+<div class="absolute top-2 right-2 bg-secondary/20 backdrop-blur-md border border-secondary/50 px-2 py-1 rounded-full flex items-center gap-1 z-20">
+<span class="material-symbols-outlined text-[12px] text-secondary">auto_awesome</span>
+<span class="font-label-sm text-[10px] text-secondary uppercase tracking-wider">Top Match</span>
+</div>
+</div>
+<div class="flex justify-between items-start mb-xs">
+<h3 class="font-headline-md text-xl font-bold text-on-surface">Truffles</h3>
+<div class="flex items-center gap-1 bg-surface-variant px-2 py-1 rounded-full">
+<span class="material-symbols-outlined text-[14px] text-secondary">star</span>
+<span class="font-label-sm text-xs text-on-surface">4.9</span>
+</div>
+</div>
+<p class="font-body-md text-sm text-on-surface-variant mb-md">Legendary burgers and decadent desserts.</p>
+<div class="mt-auto flex gap-2">
+<span class="px-2 py-1 bg-surface-container rounded-md font-label-sm text-xs text-on-surface-variant">American</span>
+<span class="px-2 py-1 bg-surface-container rounded-md font-label-sm text-xs text-on-surface-variant">$$</span>
+</div>
+</div>
+<!-- Card 3 (Right) -->
+<div class="absolute glass-panel rounded-xl w-64 h-80 p-md flex flex-col transform rotate-12 translate-x-36 translate-y-4 shadow-2xl">
+<div class="w-full h-32 rounded-lg bg-surface-container-highest mb-sm overflow-hidden relative">
+<div class="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent z-10"></div>
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8bY03oHY80TLvdfugvw-DEi0jngdJw2ANBfAcuZdrAsa14xtHEz8wZWNt4VDPYh4IgE0O2OWrAzmaDJeJ4hJeM8m2fDUlD38G_oiECgIEC9nfb0Kzh0PYoLtkU8mPLfnIWLCMOid-fkhkzCbLWrTg--sJlwobnkxXra7NpZ_HEMW91vYnc2DWjhn-6UvKcLS8858RiUxSuyy_RPnvSZLw2IUiM3LNIBukkZQLi0mOa-ceANl0EwxPZsLu-sXME43Y8hzahgCFFo-f"/>
+</div>
+<div class="flex justify-between items-start mb-xs">
+<h3 class="font-headline-md text-lg font-bold text-on-surface">Meghana</h3>
+<div class="flex items-center gap-1 bg-surface-variant px-2 py-1 rounded-full">
+<span class="material-symbols-outlined text-[14px] text-secondary">star</span>
+<span class="font-label-sm text-xs text-on-surface">4.7</span>
+</div>
+</div>
+<p class="font-body-md text-sm text-on-surface-variant line-clamp-2">Iconic biryani and Andhra delicacies.</p>
+</div>
+</div>
+</main>
+</div>
+</body></html>
