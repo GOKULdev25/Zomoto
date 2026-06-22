@@ -3,7 +3,6 @@ import sys
 import logging
 import pandas as pd
 import numpy as np
-from datasets import load_dataset
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,16 +23,25 @@ REQUIRED_COLUMNS = ["name", "location", "cuisines", "cost", "rating"]
 _cached_df: pd.DataFrame | None = None
 
 
+# ── Required columns to extract from raw CSV ──────────────────────────────────
+RAW_USE_COLS = [
+    "name", "location", "cuisines", "approx_cost(for two people)", 
+    "rate", "votes", "listed_in(type)"
+]
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Internal helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
 def load_zomato_data() -> pd.DataFrame:
-    """Load raw dataset from HuggingFace hub."""
-    logger.info("Loading dataset from HuggingFace: %s", HF_DATASET_NAME)
-    dataset = load_dataset(HF_DATASET_NAME, split="train")
-    df = dataset.to_pandas()
-    logger.info("Raw dataset loaded: %d rows, %d cols", len(df), len(df.columns))
+    """Load raw dataset directly from HuggingFace via streaming CSV."""
+    logger.info("Loading dataset from HuggingFace directly via CSV url: %s", HF_DATASET_NAME)
+    url = f"https://huggingface.co/datasets/{HF_DATASET_NAME}/resolve/main/zomato.csv"
+    
+    # Load ONLY the columns we need to prevent OOM crashes on Railway free tier (~500MB RAM limit)
+    df = pd.read_csv(url, usecols=RAW_USE_COLS)
+    
+    logger.info("Raw dataset loaded directly: %d rows, %d cols", len(df), len(df.columns))
     return df
 
 
