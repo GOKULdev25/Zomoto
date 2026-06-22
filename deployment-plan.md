@@ -226,6 +226,15 @@ web: uvicorn app:app --host 0.0.0.0 --port $PORT
 
 Includes healthcheck config with 300s timeout (needed for slow HuggingFace dataset download on first boot).
 
+```toml
+[deploy]
+startCommand = "uvicorn app:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 5
+```
+
 ### 5.4 ✅ Created `runtime.txt` (project root)
 
 Pins Python to `3.12.0` for Railway/Nixpacks.
