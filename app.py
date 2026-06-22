@@ -80,20 +80,27 @@ app.add_middleware(
 )
 
 
-# ── Pre-load dataset at startup ───────────────────────────────────────────────
+import asyncio
+
+# ── Pre-load dataset at startup (in background) ───────────────────────────────
 _df = None
 _df_load_error: str | None = None
 
-@app.on_event("startup")
-async def startup_load_dataset():
+async def load_dataset_in_background():
     global _df, _df_load_error
-    logger.info("Loading Zomato dataset at startup…")
+    loop = asyncio.get_running_loop()
     try:
-        _df = get_dataframe()
-        logger.info("Dataset loaded: %d rows ready.", len(_df))
+        # Run the slow synchronous dataset download in a thread pool
+        _df = await loop.run_in_executor(None, get_dataframe)
+        logger.info("Dataset loaded in background: %d rows ready.", len(_df))
     except Exception as exc:
         _df_load_error = str(exc)
-        logger.error("Dataset load FAILED: %s", exc)
+        logger.error("Dataset background load FAILED: %s", exc)
+
+@app.on_event("startup")
+async def startup_load_dataset():
+    logger.info("Triggering background dataset load to unblock healthchecks…")
+    asyncio.create_task(load_dataset_in_background())
 
 
 # ── Global exception handler ──────────────────────────────────────────────────
