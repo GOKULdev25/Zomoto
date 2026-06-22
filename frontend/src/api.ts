@@ -31,9 +31,11 @@ export interface RecommendResponse {
   fallback_mode: boolean;
 }
 
-// ─── Axios instance (Vite proxies /api → localhost:8000) ──────────────────────
+// ─── Axios instance ───────────────────────────────────────────────────────────
+// Production: VITE_API_URL is set on Vercel (e.g. https://your-app.up.railway.app)
+// Development: falls back to /api which Vite proxies to localhost:8000
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 60000, // 60s — LLM calls can be slow
 });
 
