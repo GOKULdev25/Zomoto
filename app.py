@@ -58,14 +58,22 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# ── CORS — allow React dev server (EC-S6) ────────────────────────────────────
+# ── CORS — allow React dev server + production (EC-S6) ────────────────────────
+CORS_ORIGINS = [
+    # Local development
+    "http://localhost:5173",   # Vite default
+    "http://localhost:3000",   # CRA default
+    "http://127.0.0.1:5173",
+]
+
+# Production: add Vercel deployment URL from env (set on Railway)
+_vercel_url = os.getenv("FRONTEND_URL")
+if _vercel_url:
+    CORS_ORIGINS.append(_vercel_url.rstrip("/"))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",   # Vite default
-        "http://localhost:3000",   # CRA default
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
