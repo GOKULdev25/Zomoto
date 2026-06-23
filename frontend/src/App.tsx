@@ -51,6 +51,7 @@ const App: React.FC = () => {
   const [loading,   setLoading]   = useState(false);
   const [results,   setResults]   = useState<RecommendResponse | null>(null);
   const [error,     setError]     = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   // ── Submit handler ───────────────────────────────────────────────────────────
   const handleSearch = async () => {
@@ -78,6 +79,7 @@ const App: React.FC = () => {
     try {
       const data = await getRecommendations(req);
       setResults(data);
+      setShowFilters(false);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         if (!err.response) {
@@ -87,7 +89,7 @@ const App: React.FC = () => {
           // EC-S7: Pydantic validation error
           const detail = err.response.data?.detail;
           const msg = Array.isArray(detail)
-            ? detail.map((d: any) => d.msg).join(', ')
+            ? detail.map((d: { msg: string }) => d.msg).join(', ')
             : String(detail ?? 'Invalid input.');
           setError(`Validation error: ${msg}`);
         } else if (err.response.status === 404) {
@@ -148,7 +150,7 @@ const App: React.FC = () => {
             </div>
           )}
 
-          <h2 className="font-headline-lg text-headline-lg text-on-surface mb-1 drop-shadow-md" title={rec.name}>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface mb-1 drop-shadow-md tracking-tight" title={rec.name}>
             {rec.display_name}
           </h2>
           <p className="font-label-md text-label-md text-primary mb-3">{rec.cuisine}</p>
@@ -201,14 +203,39 @@ const App: React.FC = () => {
       {/* ── Main layout ────────────────────────────────────────────────────────── */}
       <div className="flex pt-16 min-h-screen relative z-10 flex-col md:flex-row">
 
+        {/* Mobile Filter Toggle */}
+        <div className="md:hidden sticky top-16 z-30 w-full px-5 py-3 bg-surface/80 backdrop-blur-xl border-b border-white/5 flex justify-between items-center shadow-lg">
+          <span className="font-headline-md text-sm font-bold text-on-surface">Find your next meal</span>
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20 transition-all active:scale-95"
+          >
+            <span className="material-symbols-outlined text-[18px]">tune</span>
+            Filters
+          </button>
+        </div>
+
+        {/* Mobile Overlay */}
+        {showFilters && (
+          <div 
+            className="md:hidden fixed inset-0 bg-black/60 z-30 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowFilters(false)}
+          />
+        )}
+
         {/* ── Sidebar / Search Form ───────────────────────────────────────────── */}
-        <aside className="flex flex-col p-md gap-xs bg-surface-container-low/60 backdrop-blur-xl border-b md:border-b-0 md:border-r border-white/5 w-full md:w-80 md:h-[calc(100vh-64px)] md:sticky md:top-16 z-20 shrink-0 overflow-y-auto">
-          <div className="mb-4 mt-2">
-            <h2 className="font-headline-md text-headline-md text-primary">Fine Dining Filter</h2>
-            <p className="text-on-surface-variant mt-1 flex items-center gap-1 text-sm">
-              <span className="material-symbols-outlined text-secondary text-sm">auto_awesome</span>
-              AI-Powered Discovery
-            </p>
+        <aside className={`flex flex-col p-5 md:p-md gap-xs bg-surface-container-low/95 md:bg-surface-container-low/60 backdrop-blur-xl border-t md:border-b-0 md:border-r border-white/10 w-full md:w-80 md:h-[calc(100vh-64px)] fixed md:sticky bottom-0 md:top-16 z-40 shrink-0 overflow-y-auto transition-transform duration-300 ease-in-out ${showFilters ? 'translate-y-0 h-[85vh] rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)]' : 'translate-y-full md:translate-y-0 h-0 md:h-auto'}`}>
+          <div className="flex justify-between items-start mb-4 mt-2">
+            <div>
+              <h2 className="font-headline-md text-headline-md text-primary">Fine Dining Filter</h2>
+              <p className="text-on-surface-variant mt-1 flex items-center gap-1 text-sm font-body-md">
+                <span className="material-symbols-outlined text-secondary text-sm">auto_awesome</span>
+                AI-Powered Discovery
+              </p>
+            </div>
+            <button className="md:hidden p-2 -mr-2 text-on-surface-variant hover:text-on-surface rounded-full bg-white/5" onClick={() => setShowFilters(false)}>
+              <span className="material-symbols-outlined">close</span>
+            </button>
           </div>
 
           <div className="flex flex-col gap-md flex-1" onKeyDown={handleKeyDown}>
@@ -300,7 +327,7 @@ const App: React.FC = () => {
         </aside>
 
         {/* ── Main Panel ─────────────────────────────────────────────────────────── */}
-        <main className="flex-1 flex flex-col p-lg overflow-y-auto min-h-[calc(100vh-64px)]">
+        <main className="flex-1 flex flex-col p-5 md:p-lg overflow-y-auto min-h-[calc(100vh-64px)] pb-24 md:pb-lg">
 
           {/* Loading */}
           {loading && (
@@ -348,27 +375,29 @@ const App: React.FC = () => {
 
               {/* Preview cards — static fanned display */}
               <div className="relative w-full max-w-2xl h-64 hidden md:flex justify-center items-center">
-                <div className="absolute glass-panel rounded-xl w-52 h-64 p-md -rotate-12 -translate-x-28 translate-y-4 shadow-2xl opacity-70 overflow-hidden flex flex-col">
+                <div className="absolute glass-panel rounded-xl w-52 h-64 p-md -rotate-12 -translate-x-40 translate-y-6 shadow-2xl opacity-60 overflow-hidden flex flex-col transition-all duration-500 hover:-translate-x-48 hover:-rotate-6 hover:opacity-100 hover:z-30">
                   <div className="w-full h-24 rounded-lg bg-surface-container-highest mb-sm relative overflow-hidden">
                     <span className="material-symbols-outlined text-5xl text-primary absolute inset-0 flex items-center justify-center opacity-30">restaurant</span>
                   </div>
-                  <p className="font-headline-md text-sm font-bold text-on-surface">Toit Brewpub</p>
-                  <p className="text-xs text-on-surface-variant">Microbrewery · ⭐ 4.8</p>
+                  <p className="font-headline-md text-sm font-bold text-on-surface truncate">Toit Brewpub</p>
+                  <p className="text-xs text-on-surface-variant truncate">Microbrewery · ⭐ 4.8</p>
                 </div>
-                <div className="absolute glass-panel rounded-xl w-60 h-72 p-md z-20 shadow-2xl overflow-hidden flex flex-col border border-primary/20">
+                
+                <div className="absolute glass-panel bg-surface/80 rounded-xl w-60 h-72 p-md z-20 shadow-2xl overflow-hidden flex flex-col border border-primary/30 transition-transform duration-500 hover:-translate-y-2">
                   <div className="absolute top-3 right-3 bg-secondary/20 border border-secondary/50 px-2 py-0.5 rounded-full text-secondary text-[10px] uppercase tracking-wider">Top Match</div>
                   <div className="w-full h-28 rounded-lg bg-surface-container-highest mb-sm relative overflow-hidden">
                     <span className="material-symbols-outlined text-5xl text-secondary absolute inset-0 flex items-center justify-center opacity-30">local_dining</span>
                   </div>
-                  <p className="font-headline-md text-base font-bold text-on-surface">Truffles</p>
-                  <p className="text-xs text-on-surface-variant">American · ⭐ 4.9</p>
+                  <p className="font-headline-md text-lg font-bold text-on-surface truncate mt-1">Truffles</p>
+                  <p className="text-xs text-on-surface-variant truncate">American · ⭐ 4.9</p>
                 </div>
-                <div className="absolute glass-panel rounded-xl w-52 h-64 p-md rotate-12 translate-x-28 translate-y-4 shadow-2xl opacity-70 overflow-hidden flex flex-col">
+                
+                <div className="absolute glass-panel rounded-xl w-52 h-64 p-md rotate-12 translate-x-40 translate-y-6 shadow-2xl opacity-60 overflow-hidden flex flex-col transition-all duration-500 hover:translate-x-48 hover:rotate-6 hover:opacity-100 hover:z-30">
                   <div className="w-full h-24 rounded-lg bg-surface-container-highest mb-sm relative overflow-hidden">
                     <span className="material-symbols-outlined text-5xl text-primary absolute inset-0 flex items-center justify-center opacity-30">set_meal</span>
                   </div>
-                  <p className="font-headline-md text-sm font-bold text-on-surface">Meghana Foods</p>
-                  <p className="text-xs text-on-surface-variant">Biryani · ⭐ 4.7</p>
+                  <p className="font-headline-md text-sm font-bold text-on-surface truncate">Meghana Foods</p>
+                  <p className="text-xs text-on-surface-variant truncate">Biryani · ⭐ 4.7</p>
                 </div>
               </div>
             </div>
