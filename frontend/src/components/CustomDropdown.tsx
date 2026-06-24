@@ -73,10 +73,10 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       <button
         type="button"
         onClick={handleToggle}
-        className={`w-full bg-surface/50 border rounded-xl py-sm ${
+        className={`w-full bg-surface-container border rounded-xl py-sm ${
           icon ? 'pl-11' : 'pl-sm'
-        } pr-10 text-left text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all shadow-inner backdrop-blur-md cursor-pointer ${
-          isOpen ? 'border-primary ring-1 ring-primary/30' : 'border-white/10'
+        } pr-10 text-left text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-[rgba(var(--color-primary-rgb),0.3)] transition-all shadow-inner backdrop-blur-md cursor-pointer ${
+          isOpen ? 'border-primary ring-1 ring-[rgba(var(--color-primary-rgb),0.3)]' : 'border-outline-variant/30'
         }`}
       >
         <span className="block truncate font-body-md">
@@ -97,11 +97,11 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="absolute z-50 w-full mt-2 bg-surface-container-high/90 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+            className="absolute z-50 w-full mt-2 bg-surface-container-high backdrop-blur-2xl border border-outline-variant/30 rounded-xl shadow-2xl overflow-hidden"
           >
             {/* Search Input */}
             {searchable && (
-              <div className="p-2 border-b border-white/10 bg-surface/50">
+              <div className="p-2 border-b border-outline-variant/30 bg-surface-container">
                 <div className="relative">
                   <span className="absolute inset-y-0 left-2 flex items-center text-on-surface-variant">
                     <span className="material-symbols-outlined text-sm">search</span>
@@ -112,7 +112,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search..."
-                    className="w-full bg-surface-container border border-white/5 rounded-lg py-1.5 pl-8 pr-3 text-sm text-on-surface focus:outline-none focus:border-primary/50 transition-colors"
+                    className="w-full bg-surface-container border border-outline-variant/20 rounded-lg py-1.5 pl-8 pr-3 text-sm text-on-surface focus:outline-none focus:border-primary/50 transition-colors"
                   />
                 </div>
               </div>
@@ -132,7 +132,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                     className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
                       value === opt.value
                         ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-on-surface hover:bg-white/5'
+                        : 'text-on-surface hover:bg-surface-container-high'
                     }`}
                   >
                     <span className="truncate">{opt.label}</span>

@@ -101,13 +101,13 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
       <button
         type="button"
         onClick={handleToggle}
-        className={`w-full bg-surface/50 border rounded-xl py-sm ${
+        className={`w-full bg-surface-container border rounded-xl py-sm ${
           icon ? 'pl-11' : 'pl-sm'
-        } pr-10 text-left text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all shadow-inner backdrop-blur-md cursor-pointer ${
-          isOpen ? 'border-primary ring-1 ring-primary/30' : 'border-white/10'
+        } pr-10 text-left text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-[rgba(var(--color-primary-rgb),0.3)] transition-all shadow-inner backdrop-blur-md cursor-pointer ${
+          isOpen ? 'border-primary ring-1 ring-[rgba(var(--color-primary-rgb),0.3)]' : 'border-outline-variant/30'
         }`}
       >
-        <span className={`block truncate font-body-md ${values.length === 0 ? 'text-on-surface-variant/50' : ''}`}>
+        <span className={`block truncate font-body-md ${values.length === 0 ? 'text-[rgba(var(--color-on-surface-rgb),0.5)]' : ''}`}>
           {getDisplayLabel()}
         </span>
         <div className="absolute inset-y-0 right-0 pr-sm flex items-center gap-1">
@@ -142,11 +142,11 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="absolute z-50 w-full mt-2 bg-surface-container-high/90 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+            className="absolute z-50 w-full mt-2 bg-surface-container-high backdrop-blur-2xl border border-outline-variant/30 rounded-xl shadow-2xl overflow-hidden"
           >
             {/* Search Input */}
             {searchable && (
-              <div className="p-2 border-b border-white/10 bg-surface/50">
+              <div className="p-2 border-b border-outline-variant/30 bg-surface-container">
                 <div className="relative">
                   <span className="absolute inset-y-0 left-2 flex items-center text-on-surface-variant">
                     <span className="material-symbols-outlined text-sm">search</span>
@@ -157,7 +157,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search..."
-                    className="w-full bg-surface-container border border-white/5 rounded-lg py-1.5 pl-8 pr-3 text-sm text-on-surface focus:outline-none focus:border-primary/50 transition-colors"
+                    className="w-full bg-surface-container border border-outline-variant/20 rounded-lg py-1.5 pl-8 pr-3 text-sm text-on-surface focus:outline-none focus:border-primary/50 transition-colors"
                   />
                 </div>
               </div>
@@ -167,7 +167,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
             {!search && (
               <button
                 onClick={handleSelectAll}
-                className="w-full text-left px-4 py-2 text-xs transition-colors flex items-center justify-between border-b border-white/5 hover:bg-white/5 text-on-surface-variant"
+                className="w-full text-left px-4 py-2 text-xs transition-colors flex items-center justify-between border-b border-outline-variant/20 hover:bg-surface-container-high text-on-surface-variant"
               >
                 <span className="font-medium">{isAllSelected ? 'Deselect All' : 'Select All'}</span>
                 <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
@@ -175,7 +175,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                     ? 'bg-primary border-primary'
                     : values.length > 0
                     ? 'border-primary bg-primary/30'
-                    : 'border-white/20'
+                    : 'border-outline-variant/40'
                 }`}>
                   {isAllSelected && (
                     <span className="material-symbols-outlined text-[12px] text-on-primary">check</span>
@@ -203,14 +203,14 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                       className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between gap-2 ${
                         isSelected
                           ? 'bg-primary/10 text-primary'
-                          : 'text-on-surface hover:bg-white/5'
+                          : 'text-on-surface hover:bg-surface-container-high'
                       }`}
                     >
                       <span className="truncate">{opt.label}</span>
                       <div className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
                         isSelected
                           ? 'bg-primary border-primary'
-                          : 'border-white/20'
+                          : 'border-outline-variant/40'
                       }`}>
                         {isSelected && (
                           <span className="material-symbols-outlined text-[12px] text-on-primary">check</span>
@@ -224,7 +224,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
 
             {/* Bottom bar with count */}
             {values.length > 0 && (
-              <div className="px-4 py-2 border-t border-white/5 bg-surface/50 flex items-center justify-between">
+              <div className="px-4 py-2 border-t border-outline-variant/20 bg-surface-container flex items-center justify-between">
                 <span className="text-xs text-on-surface-variant">
                   {values.length} selected
                 </span>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ShaderBackground } from './ShaderBackground';
 import axios from 'axios';
 import { getRecommendations } from './api';
@@ -43,6 +43,16 @@ const BUDGET_OPTIONS = [
 ];
 
 const App: React.FC = () => {
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
   // ── Form state ──────────────────────────────────────────────────────────────
   const [locations,      setLocations]      = useState<string[]>(['Bangalore']);
   const [cuisines,       setCuisines]       = useState<string[]>([]);
@@ -199,7 +209,7 @@ const App: React.FC = () => {
           </div>
 
           {/* AI reasoning */}
-          <div className="mt-auto p-4 rounded-lg bg-surface-container-low/50 border border-white/5">
+          <div className="mt-auto p-4 rounded-lg bg-surface-container-low border border-outline-variant/20">
             <div className="flex gap-2 items-start">
               <span className="material-symbols-outlined text-secondary mt-0.5 text-[18px]">psychology</span>
               <p className="font-body-md text-sm text-on-surface-variant italic">"{rec.why}"</p>
@@ -230,14 +240,26 @@ const App: React.FC = () => {
               AI-Powered Discovery
             </p>
           </div>
-          {/* Mobile close button */}
-          <button
-            className="lg:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer"
-            onClick={() => setMobileDrawer(false)}
-            aria-label="Close filters"
-          >
-            <span className="material-symbols-outlined text-on-surface-variant text-lg">close</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer text-on-surface-variant"
+              aria-label="Toggle theme"
+            >
+              <span className="material-symbols-outlined text-lg">
+                {isDarkMode ? 'light_mode' : 'dark_mode'}
+              </span>
+            </button>
+            {/* Mobile close button */}
+            <button
+              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer"
+              onClick={() => setMobileDrawer(false)}
+              aria-label="Close filters"
+            >
+              <span className="material-symbols-outlined text-on-surface-variant text-lg">close</span>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -255,13 +277,13 @@ const App: React.FC = () => {
           </label>
           <textarea
             id="input-food-preference"
-            className="w-full h-24 bg-surface/50 border border-white/10 rounded-xl py-sm px-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all shadow-inner backdrop-blur-md resize-none text-sm"
+            className="w-full h-24 bg-surface-container border border-outline-variant/30 rounded-xl py-sm px-sm text-on-surface placeholder:text-[rgba(var(--color-on-surface-rgb),0.5)] focus:outline-none focus:border-primary focus:ring-1 focus:ring-[rgba(var(--color-primary-rgb),0.3)] transition-all shadow-inner backdrop-blur-md resize-none text-sm"
             placeholder="Tell us your thoughts... e.g. I want something spicy and cheesy, maybe with outdoor seating, family-friendly place..."
             value={foodPreference}
             onChange={(e) => setFoodPreference(e.target.value)}
             maxLength={300}
           />
-          <p className="text-xs text-on-surface-variant/50 text-right mt-0.5">{foodPreference.length}/300</p>
+          <p className="text-xs text-[rgba(var(--color-on-surface-rgb),0.5)] text-right mt-0.5">{foodPreference.length}/300</p>
         </div>
 
         <div className="filter-divider" />
@@ -366,7 +388,7 @@ const App: React.FC = () => {
               <span className="material-symbols-outlined text-lg">add</span>
             </button>
           </div>
-          <p className="text-xs text-on-surface-variant/50 text-center mt-2">
+          <p className="text-xs text-[rgba(var(--color-on-surface-rgb),0.5)] text-center mt-2">
             {topN === 1 ? '1 restaurant' : `${topN} restaurants`} will be recommended
           </p>
         </div>
@@ -374,7 +396,7 @@ const App: React.FC = () => {
       </div>
 
       {/* ── Sticky CTA buttons ─────────────────────────────────────────── */}
-      <div className="px-5 pb-5 pt-3 space-y-2 border-t border-white/5 bg-surface-container-lowest/80 backdrop-blur-md">
+      <div className="px-5 pb-5 pt-3 space-y-2 border-t border-outline-variant/20 bg-surface-container-lowest backdrop-blur-md">
         <button
           id="search-btn"
           onClick={handleSearch}
@@ -410,7 +432,7 @@ const App: React.FC = () => {
       <ShaderBackground />
 
       {/* ── Mobile top bar (only on small screens) ─────────────────────────── */}
-      <header className="lg:hidden fixed top-0 w-full z-50 bg-background/80 backdrop-blur-lg border-b border-white/10 shadow-xl">
+      <header className="lg:hidden fixed top-0 w-full z-50 bg-background backdrop-blur-lg border-b border-outline-variant/30 shadow-xl">
         <div className="flex justify-between items-center px-gutter h-14 w-full">
           <span
             className="font-hero-display text-headline-lg font-extrabold text-primary tracking-tighter cursor-pointer select-none text-xl"
@@ -418,14 +440,25 @@ const App: React.FC = () => {
           >
             Zomoto
           </span>
-          <button
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer"
-            onClick={() => setMobileDrawer(true)}
-            aria-label="Open filters"
-          >
-            <span className="material-symbols-outlined text-primary text-lg">tune</span>
-            <span className="text-xs text-on-surface-variant font-medium">Filters</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer text-on-surface-variant"
+              aria-label="Toggle theme"
+            >
+              <span className="material-symbols-outlined text-lg">
+                {isDarkMode ? 'light_mode' : 'dark_mode'}
+              </span>
+            </button>
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer"
+              onClick={() => setMobileDrawer(true)}
+              aria-label="Open filters"
+            >
+              <span className="material-symbols-outlined text-primary text-lg">tune</span>
+              <span className="text-xs text-on-surface-variant font-medium">Filters</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -488,7 +521,7 @@ const App: React.FC = () => {
                   <p className="text-xs text-on-surface-variant truncate">Microbrewery · 4.8 ★</p>
                 </div>
                 
-                <div className="absolute glass-panel bg-surface/80 rounded-xl w-60 h-72 p-md z-20 shadow-2xl overflow-hidden flex flex-col border border-primary/30 transition-transform duration-500 hover:-translate-y-2">
+                <div className="absolute glass-panel bg-surface-container rounded-xl w-60 h-72 p-md z-20 shadow-2xl overflow-hidden flex flex-col border border-primary/30 transition-transform duration-500 hover:-translate-y-2">
                   <div className="absolute top-3 right-3 bg-secondary/20 border border-secondary/50 px-2 py-0.5 rounded-full text-secondary text-[10px] uppercase tracking-wider">Top Match</div>
                   <div className="w-full h-28 rounded-lg bg-surface-container-highest mb-sm relative overflow-hidden">
                     <span className="material-symbols-outlined text-5xl text-secondary absolute inset-0 flex items-center justify-center opacity-30">local_dining</span>
@@ -552,7 +585,7 @@ const App: React.FC = () => {
 
               {/* Results header */}
               <div className="mb-lg animate-stagger-1">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-low border border-white/5 mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/20 mb-4">
                   <span className="material-symbols-outlined text-secondary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
                   <span className="font-label-sm text-label-sm text-secondary tracking-wide uppercase">AI Recommendations Complete</span>
                 </div>
@@ -610,7 +643,7 @@ const App: React.FC = () => {
               <div className="flex justify-center mt-8">
                 <button
                   onClick={() => { setResults(null); }}
-                  className="px-6 py-2.5 bg-surface-container hover:bg-surface-container-high rounded-xl text-on-surface transition-colors text-sm flex items-center gap-2 border border-white/5 cursor-pointer"
+                  className="px-6 py-2.5 bg-surface-container hover:bg-surface-container-high rounded-xl text-on-surface transition-colors text-sm flex items-center gap-2 border border-outline-variant/20 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[18px]">arrow_back</span>
                   New Search

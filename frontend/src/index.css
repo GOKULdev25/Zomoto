@@ -3,25 +3,192 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* ── Light Mode Palette ─────────────────────────────────────────── */
+    --color-on-tertiary-fixed: #00201e;
+    --color-primary: #bb162c;
+    --color-secondary-fixed-dim: #ffb59d;
+    --color-on-background: #2c1b1b;
+    --color-tertiary-container: #71d7cf;
+    --color-background: #fffbff;
+    --color-secondary: #832600;
+    --color-surface-tint: #bb162c;
+    --color-outline-variant: #d8c2c0;
+    --color-error: #ba1a1a;
+    --color-error-container: #ffdad6;
+    --color-on-primary-fixed: #410007;
+    --color-on-primary: #ffffff;
+    --color-surface-container: #f5e5e4;
+    --color-on-tertiary: #ffffff;
+    --color-surface-container-highest: #e8d6d5;
+    --color-on-secondary-fixed-variant: #832600;
+    --color-on-error-container: #410002;
+    --color-inverse-primary: #ffb3b1;
+    --color-surface-variant: #f4dddc;
+    --color-surface-dim: #e8d6d5;
+    --color-surface-container-low: #fdf0ef;
+    --color-surface: #fffbff;
+    --color-secondary-fixed: #ffdbd0;
+    --color-tertiary: #006a65;
+    --color-surface-bright: #fffbff;
+    --color-surface-container-high: #f1e1e0;
+    --color-outline: #857372;
+    --color-primary-fixed-dim: #ffb3b1;
+    --color-inverse-surface: #3e2c2b;
+    --color-primary-fixed: #ffdad8;
+    --color-on-primary-fixed-variant: #92001c;
+    --color-on-primary-container: #410007;
+    --color-surface-container-lowest: #ffffff;
+    --color-on-tertiary-container: #00201e;
+    --color-on-secondary-container: #2b0800;
+    --color-on-surface: #2c1b1b;
+    --color-secondary-container: #ffdbd0;
+    --color-on-secondary: #ffffff;
+    --color-inverse-on-surface: #ffedec;
+    --color-on-tertiary-fixed-variant: #00504c;
+    --color-primary-container: #ffdad8;
+    --color-on-error: #ffffff;
+    --color-tertiary-fixed-dim: #71d7cf;
+    --color-on-surface-variant: #5b403f;
+    --color-on-secondary-fixed: #2b0800;
+    --color-tertiary-fixed: #8ef4eb;
+
+    /* ── Light mode helpers ──────────────────────────────────────────── */
+    --color-primary-rgb: 187, 22, 44;
+    --color-on-surface-rgb: 44, 27, 27;
+    --color-surface-rgb: 255, 251, 255;
+
+    --theme-glass-bg: rgba(255, 255, 255, 0.75);
+    --theme-glass-border: rgba(44, 27, 27, 0.12);
+    --theme-glass-hover: rgba(255, 255, 255, 0.9);
+    --theme-shadow-color: rgba(187, 22, 44, 0.12);
+
+    --sidebar-bg: rgba(245, 229, 228, 0.95);
+    --sidebar-border: rgba(44, 27, 27, 0.08);
+    --stepper-color: var(--color-primary);
+    --stepper-value-color: var(--color-on-surface);
+    --stepper-hover-bg: rgba(187, 22, 44, 0.1);
+    --stepper-hover-border: rgba(187, 22, 44, 0.25);
+    --chip-color: var(--color-on-surface-variant);
+    --chip-hover-bg: rgba(187, 22, 44, 0.08);
+    --chip-hover-border: rgba(187, 22, 44, 0.2);
+    --chip-hover-color: var(--color-primary);
+    --chip-active-bg: rgba(187, 22, 44, 0.12);
+    --chip-active-border: rgba(187, 22, 44, 0.35);
+    --chip-active-color: var(--color-primary);
+    --divider-color: rgba(187, 22, 44, 0.12);
+    --gradient-from: #bb162c;
+    --gradient-to: #d44020;
+    --scrollbar-track: rgba(0, 0, 0, 0.05);
+    --scrollbar-thumb: #d8c2c0;
+    --scrollbar-thumb-hover: var(--color-primary);
+    --input-border: rgba(44, 27, 27, 0.15);
+    --input-bg: rgba(255, 255, 255, 0.6);
+  }
+
+  .dark {
+    /* ── Dark Mode Palette ──────────────────────────────────────────── */
+    --color-on-tertiary-fixed: #00201e;
+    --color-primary: #ffb3b1;
+    --color-secondary-fixed-dim: #ffb59d;
+    --color-on-background: #f9dcda;
+    --color-tertiary-container: #32a099;
+    --color-background: #1e0f0f;
+    --color-secondary: #ffb59d;
+    --color-surface-tint: #ffb3b1;
+    --color-outline-variant: #5b403f;
+    --color-error: #ffb4ab;
+    --color-error-container: #93000a;
+    --color-on-primary-fixed: #410007;
+    --color-on-primary: #680011;
+    --color-surface-container: #2c1b1b;
+    --color-on-tertiary: #003734;
+    --color-surface-container-highest: #423030;
+    --color-on-secondary-fixed-variant: #832600;
+    --color-on-error-container: #ffdad6;
+    --color-inverse-primary: #bb162c;
+    --color-surface-variant: #423030;
+    --color-surface-dim: #1e0f0f;
+    --color-surface-container-low: #271717;
+    --color-surface: #1e0f0f;
+    --color-secondary-fixed: #ffdbd0;
+    --color-tertiary: #71d7cf;
+    --color-surface-bright: #473534;
+    --color-surface-container-high: #372625;
+    --color-outline: #ab8987;
+    --color-primary-fixed-dim: #ffb3b1;
+    --color-inverse-surface: #f9dcda;
+    --color-primary-fixed: #ffdad8;
+    --color-on-primary-fixed-variant: #92001c;
+    --color-on-primary-container: #5b000e;
+    --color-surface-container-lowest: #180a0a;
+    --color-on-tertiary-container: #00302d;
+    --color-on-secondary-container: #ffddd2;
+    --color-on-surface: #f9dcda;
+    --color-secondary-container: #b83900;
+    --color-on-secondary: #5d1900;
+    --color-inverse-on-surface: #3e2c2b;
+    --color-on-tertiary-fixed-variant: #00504c;
+    --color-primary-container: #ff535a;
+    --color-on-error: #690005;
+    --color-tertiary-fixed-dim: #71d7cf;
+    --color-on-surface-variant: #e4bebc;
+    --color-on-secondary-fixed: #390c00;
+    --color-tertiary-fixed: #8ef4eb;
+
+    /* ── Dark mode helpers ───────────────────────────────────────────── */
+    --color-primary-rgb: 255, 179, 177;
+    --color-on-surface-rgb: 249, 220, 218;
+    --color-surface-rgb: 30, 15, 15;
+
+    --theme-glass-bg: rgba(255, 255, 255, 0.04);
+    --theme-glass-border: rgba(255, 255, 255, 0.08);
+    --theme-glass-hover: rgba(255, 255, 255, 0.08);
+    --theme-shadow-color: rgba(226, 55, 68, 0.15);
+
+    --sidebar-bg: rgba(30, 15, 15, 0.95);
+    --sidebar-border: rgba(255, 255, 255, 0.06);
+    --stepper-color: #ffb3b1;
+    --stepper-value-color: #f9dcda;
+    --stepper-hover-bg: rgba(255, 179, 177, 0.15);
+    --stepper-hover-border: rgba(255, 179, 177, 0.3);
+    --chip-color: #e4bebc;
+    --chip-hover-bg: rgba(255, 179, 177, 0.1);
+    --chip-hover-border: rgba(255, 179, 177, 0.25);
+    --chip-hover-color: #ffb3b1;
+    --chip-active-bg: rgba(255, 179, 177, 0.15);
+    --chip-active-border: rgba(255, 179, 177, 0.4);
+    --chip-active-color: #ffb3b1;
+    --divider-color: rgba(255, 179, 177, 0.15);
+    --gradient-from: #ffb3b1;
+    --gradient-to: #ffb59d;
+    --scrollbar-track: rgba(0, 0, 0, 0.2);
+    --scrollbar-thumb: #5b403f;
+    --scrollbar-thumb-hover: #ffb3b1;
+    --input-border: rgba(255, 255, 255, 0.1);
+    --input-bg: rgba(255, 255, 255, 0.04);
+  }
+
   body {
-    background-color: #1e0f0f;
-    color: #f9dcda;
+    background-color: var(--color-background);
+    color: var(--color-on-background);
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
+    transition: background-color 0.4s ease, color 0.4s ease;
   }
 }
 
 @layer components {
   .glass-panel {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-glass-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-glass-border);
   }
   
   .gradient-text {
-    background: linear-gradient(to right, #ffb3b1, #ffb59d);
+    background: linear-gradient(to right, var(--gradient-from), var(--gradient-to));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -32,8 +199,8 @@
     transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .card-hover:hover {
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 20px rgba(226, 55, 68, 0.15);
+    background: var(--theme-glass-hover);
+    box-shadow: 0 0 20px var(--theme-shadow-color);
     transform: translateY(-4px);
   }
 
@@ -43,14 +210,14 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--scrollbar-track);
   }
   ::-webkit-scrollbar-thumb {
-    background: #5b403f;
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #ffb3b1;
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* ── Stepper component ───────────────────────────────────────────── */
@@ -61,9 +228,9 @@
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
-    color: #ffb3b1;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--stepper-color);
     font-size: 18px;
     font-weight: 600;
     cursor: pointer;
@@ -72,8 +239,8 @@
     backdrop-filter: blur(8px);
   }
   .stepper-btn:hover {
-    background: rgba(255, 179, 177, 0.15);
-    border-color: rgba(255, 179, 177, 0.3);
+    background: var(--stepper-hover-bg);
+    border-color: var(--stepper-hover-border);
     transform: scale(1.05);
   }
   .stepper-btn:active {
@@ -90,7 +257,7 @@
     font-family: 'Playfair Display SC', serif;
     font-size: 24px;
     font-weight: 700;
-    color: #f9dcda;
+    color: var(--stepper-value-color);
     line-height: 1;
   }
 
@@ -109,7 +276,7 @@
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.15),
+      rgba(255, 255, 255, 0.25),
       transparent
     );
     transition: left 0.5s ease;
@@ -125,9 +292,9 @@
     gap: 4px;
     padding: 4px 12px;
     border-radius: 9999px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
-    color: #e4bebc;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--chip-color);
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -136,14 +303,14 @@
     user-select: none;
   }
   .cuisine-chip:hover {
-    background: rgba(255, 179, 177, 0.1);
-    border-color: rgba(255, 179, 177, 0.25);
-    color: #ffb3b1;
+    background: var(--chip-hover-bg);
+    border-color: var(--chip-hover-border);
+    color: var(--chip-hover-color);
   }
   .cuisine-chip.active {
-    background: rgba(255, 179, 177, 0.15);
-    border-color: rgba(255, 179, 177, 0.4);
-    color: #ffb3b1;
+    background: var(--chip-active-bg);
+    border-color: var(--chip-active-border);
+    color: var(--chip-active-color);
     font-weight: 600;
   }
 
@@ -159,10 +326,10 @@
 
   /* ── Filter sidebar ──────────────────────────────────────────────── */
   .filter-sidebar {
-    background: rgba(30, 15, 15, 0.95);
+    background: var(--sidebar-bg);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    border-right: 1px solid var(--sidebar-border);
   }
 
   /* ── Section divider ─────────────────────────────────────────────── */
@@ -171,7 +338,7 @@
     background: linear-gradient(
       to right,
       transparent,
-      rgba(255, 179, 177, 0.15),
+      var(--divider-color),
       transparent
     );
     margin: 4px 0;
