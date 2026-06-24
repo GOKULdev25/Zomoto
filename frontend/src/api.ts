@@ -7,6 +7,7 @@ export interface RecommendRequest {
   cuisine: string;
   min_rating: number;       // backend field name is min_rating, not rating
   extras: string;
+  top_n?: number;
 }
 
 // ─── Backend Response Types ────────────────────────────────────────────────────

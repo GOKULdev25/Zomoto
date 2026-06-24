@@ -52,6 +52,130 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #ffb3b1;
   }
+
+  /* ── Stepper component ───────────────────────────────────────────── */
+  .stepper-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: #ffb3b1;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    backdrop-filter: blur(8px);
+  }
+  .stepper-btn:hover {
+    background: rgba(255, 179, 177, 0.15);
+    border-color: rgba(255, 179, 177, 0.3);
+    transform: scale(1.05);
+  }
+  .stepper-btn:active {
+    transform: scale(0.95);
+  }
+  .stepper-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .stepper-value {
+    min-width: 44px;
+    text-align: center;
+    font-family: 'Playfair Display SC', serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #f9dcda;
+    line-height: 1;
+  }
+
+  /* ── Surprise Me shimmer ─────────────────────────────────────────── */
+  .surprise-btn {
+    position: relative;
+    overflow: hidden;
+  }
+  .surprise-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.15),
+      transparent
+    );
+    transition: left 0.5s ease;
+  }
+  .surprise-btn:hover::before {
+    left: 100%;
+  }
+
+  /* ── Cuisine quick-pick chips ────────────────────────────────────── */
+  .cuisine-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: #e4bebc;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .cuisine-chip:hover {
+    background: rgba(255, 179, 177, 0.1);
+    border-color: rgba(255, 179, 177, 0.25);
+    color: #ffb3b1;
+  }
+  .cuisine-chip.active {
+    background: rgba(255, 179, 177, 0.15);
+    border-color: rgba(255, 179, 177, 0.4);
+    color: #ffb3b1;
+    font-weight: 600;
+  }
+
+  /* ── Mobile drawer overlay ───────────────────────────────────────── */
+  .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 40;
+  }
+
+  /* ── Filter sidebar ──────────────────────────────────────────────── */
+  .filter-sidebar {
+    background: rgba(30, 15, 15, 0.95);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* ── Section divider ─────────────────────────────────────────────── */
+  .filter-divider {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(255, 179, 177, 0.15),
+      transparent
+    );
+    margin: 4px 0;
+  }
 }
 
 @layer utilities {
@@ -64,4 +188,9 @@
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }

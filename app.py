@@ -32,7 +32,7 @@ import uvicorn
 from src.data_loader import get_dataframe
 from src.user_input import UserPreferences, BUDGET_MAP
 from src.filter_engine import filter_restaurants
-from src.prompt_builder import SYSTEM_PROMPT, build_user_prompt
+from src.prompt_builder import build_system_prompt, build_user_prompt
 from src.groq_client import get_recommendation
 from src.output_formatter import parse_llm_response, format_recommendation_card
 
@@ -132,6 +132,8 @@ class RecommendRequest(BaseModel):
                                description="Minimum star rating (1.0 – 5.0)")
     extras:     str   = Field("",   max_length=500,
                                description="Free-text extra preferences (family-friendly, rooftop, etc.)")
+    top_n:      int   = Field(5,    ge=1, le=10,
+                               description="Number of recommendations to return (default 5)")
 
     model_config = {"json_schema_extra": {
         "example": {
@@ -140,6 +142,7 @@ class RecommendRequest(BaseModel):
             "cuisine":    "North Indian",
             "min_rating": 4.0,
             "extras":     "family-friendly",
+            "top_n":      5,
         }
     }}
 
@@ -279,10 +282,10 @@ def recommend(req: RecommendRequest) -> RecommendResponse:
 
     # ── EC-G7: Adaptive candidate count to stay under token limit ─────────────
     selected = candidates
-    user_prompt = build_user_prompt(prefs, selected)
-    for n in [15, 10, 5]:
+    user_prompt = build_user_prompt(prefs, selected, req.top_n)
+    for n in [15, 10, req.top_n + 2]:
         selected     = candidates.head(n)
-        user_prompt  = build_user_prompt(prefs, selected)
+        user_prompt  = build_user_prompt(prefs, selected, req.top_n)
         word_count   = len(user_prompt.split())
         if word_count < 1500:
             break
@@ -292,7 +295,8 @@ def recommend(req: RecommendRequest) -> RecommendResponse:
     )
 
     # ── Call Groq LLM ─────────────────────────────────────────────────────────
-    llm_output = get_recommendation(SYSTEM_PROMPT, user_prompt)
+    system_prompt = build_system_prompt(req.top_n)
+    llm_output = get_recommendation(system_prompt, user_prompt)
 
     # ── EC-G4: Empty or error LLM response → fallback ─────────────────────────
     if not llm_output.strip() or llm_output.startswith("❌"):
@@ -323,7 +327,7 @@ def recommend(req: RecommendRequest) -> RecommendResponse:
     # ── Format cards & return ─────────────────────────────────────────────────
     cards = [
         RecommendationCard(**format_recommendation_card(r))
-        for r in parsed_recs[:3]
+        for r in parsed_recs[:req.top_n]
     ]
 
     logger.info("Returning %d recommendation card(s).", len(cards))

@@ -4,11 +4,10 @@ from dotenv import load_dotenv
 from src.user_input import UserPreferences, BUDGET_MAP
 
 load_dotenv()
-TOP_K_RECOMMENDATIONS = int(os.getenv("TOP_K_RECOMMENDATIONS", 3))
-
-SYSTEM_PROMPT = f"""You are an expert restaurant recommendation assistant.
+def build_system_prompt(top_n: int) -> str:
+    return f"""You are an expert restaurant recommendation assistant.
 You will receive a list of real restaurants with their actual data.
-Your ONLY job is to pick the TOP {TOP_K_RECOMMENDATIONS} restaurants from the provided list.
+Your ONLY job is to pick the TOP {top_n} restaurants from the provided list.
 Rules:
 - Do NOT invent or assume any detail not present in the data.
 - Rank by best match to user's preferences.
@@ -23,7 +22,6 @@ Cost      : ₹<cost> for two
 Why       : <explanation>
 """
 
-
 def build_candidates_table(candidates: pd.DataFrame) -> str:
     rows = []
     for i, row in candidates.iterrows():
@@ -34,7 +32,7 @@ def build_candidates_table(candidates: pd.DataFrame) -> str:
         )
     return "\n".join(rows)
 
-def build_user_prompt(prefs: UserPreferences, candidates: pd.DataFrame) -> str:
+def build_user_prompt(prefs: UserPreferences, candidates: pd.DataFrame, top_n: int) -> str:
     low, high = BUDGET_MAP[prefs.budget]
     table = build_candidates_table(candidates)
     return f"""USER PREFERENCES:
@@ -47,5 +45,5 @@ def build_user_prompt(prefs: UserPreferences, candidates: pd.DataFrame) -> str:
 CANDIDATE RESTAURANTS:
 {table}
 
-TASK: Rank the top {TOP_K_RECOMMENDATIONS} restaurants from the list above that best match this user.
+TASK: Rank the top {top_n} restaurants from the list above that best match this user.
 """

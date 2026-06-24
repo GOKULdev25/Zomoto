@@ -74,7 +74,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
         type="button"
         onClick={handleToggle}
         className={`w-full bg-surface/50 border rounded-xl py-sm ${
-          icon ? 'pl-xl' : 'pl-sm'
+          icon ? 'pl-11' : 'pl-sm'
         } pr-10 text-left text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all shadow-inner backdrop-blur-md cursor-pointer ${
           isOpen ? 'border-primary ring-1 ring-primary/30' : 'border-white/10'
         }`}
