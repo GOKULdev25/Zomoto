@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { ShaderBackground } from './ShaderBackground';
 import axios from 'axios';
-import { getRecommendations } from './api';
+import { getRecommendations, getRestaurantImageUrl } from './api';
 import type { RecommendRequest, RecommendResponse, RecommendationCard } from './api';
 import { CustomDropdown } from './components/CustomDropdown';
 import { MultiSelectDropdown } from './components/MultiSelectDropdown';
@@ -72,6 +72,7 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     setResults(null);
+    setImageStates({});
     setMobileDrawer(false);
 
     try {
@@ -155,9 +156,32 @@ const App: React.FC = () => {
     if (e.key === 'Enter' && !loading && locations.length > 0) handleSearch();
   };
 
+  // ── Image state tracking with retry ─────────────────────────────────────────
+  const MAX_IMAGE_RETRIES = 2;
+  const [imageStates, setImageStates] = useState<Record<string, { status: 'loading' | 'loaded' | 'error'; attempt: number }>>({});
+
+  const handleImageLoad = (key: string) => {
+    setImageStates(prev => ({ ...prev, [key]: { ...prev[key], status: 'loaded' } }));
+  };
+
+  const handleImageError = (key: string) => {
+    setImageStates(prev => {
+      const current = prev[key] || { status: 'loading', attempt: 0 };
+      if (current.attempt < MAX_IMAGE_RETRIES) {
+        // Retry with incremented attempt (changes the seed → new URL)
+        return { ...prev, [key]: { status: 'loading', attempt: current.attempt + 1 } };
+      }
+      // All retries exhausted — show fallback
+      return { ...prev, [key]: { status: 'error', attempt: current.attempt } };
+    });
+  };
+
   // ── Render card ──────────────────────────────────────────────────────────────
   const renderCard = (rec: RecommendationCard, idx: number) => {
     const medal = MEDAL_STYLES[rec.rank] ?? MEDAL_STYLES['3'];
+    const imageKey = `${rec.name}-${idx}`;
+    const imgState = imageStates[imageKey] || { status: 'loading', attempt: 0 };
+    const imageUrl = rec.image_prompt ? getRestaurantImageUrl(rec.image_prompt, imgState.attempt) : '';
 
     return (
       <motion.div
@@ -173,14 +197,44 @@ const App: React.FC = () => {
           <span className={`font-label-sm text-label-sm font-bold tracking-wider ${medal.text}`}>RANK {rec.rank}</span>
         </div>
 
-        {/* Image placeholder (gradient) */}
+        {/* AI-Generated Restaurant Image */}
         <div className="h-48 w-full relative overflow-hidden bg-surface-container-highest flex-shrink-0">
-          <div className="absolute inset-0 bg-gradient-to-tr from-surface to-surface-variant opacity-50" />
-          <div className="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent z-10" />
-          {/* Decorative food icon in placeholder */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-20 z-0">
-            <span className="material-symbols-outlined text-8xl text-primary">restaurant</span>
-          </div>
+          {/* Shimmer loading animation */}
+          {imgState.status === 'loading' && (
+            <div className="absolute inset-0 z-0">
+              <div className="absolute inset-0 bg-gradient-to-r from-surface-container via-surface-container-high to-surface-container animate-pulse" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2 opacity-50">
+                  <span className="material-symbols-outlined text-4xl text-primary animate-pulse">auto_awesome</span>
+                  <span className="text-xs text-on-surface-variant font-medium">Generating image…</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Actual AI-generated image */}
+          {imageUrl && imgState.status !== 'error' && (
+            <img
+              src={imageUrl}
+              alt={`AI-generated image of ${rec.display_name}`}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                imgState.status === 'loaded' ? 'opacity-100' : 'opacity-0'
+              }`}
+              onLoad={() => handleImageLoad(imageKey)}
+              onError={() => handleImageError(imageKey)}
+              loading="lazy"
+            />
+          )}
+
+          {/* Fallback placeholder (shown after all retries exhausted or no prompt) */}
+          {(imgState.status === 'error' || !imageUrl) && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-tr from-surface to-surface-variant opacity-70 z-0">
+              <span className="material-symbols-outlined text-8xl text-primary opacity-20">restaurant</span>
+            </div>
+          )}
+
+          {/* Bottom gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent z-10" />
         </div>
 
         {/* Card content */}

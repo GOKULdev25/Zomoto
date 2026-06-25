@@ -102,4 +102,5 @@ def format_recommendation_card(rec: dict) -> dict:
         "cost":          rec.get("cost", "—"),
         "why":           rec.get("why", "—"),
         "hallucinated":  rec.get("hallucinated", False),
+        "image_prompt":  rec.get("image prompt", f"A delicious {rec.get('cuisine', 'gourmet')} dish beautifully plated in an upscale restaurant setting"),
     }

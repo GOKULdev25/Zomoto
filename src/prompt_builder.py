@@ -15,11 +15,12 @@ Rules:
 - Use this exact format for each recommendation:
 
 RANK {{n}}
-Name      : <restaurant name>
-Cuisine   : <cuisine>
-Rating    : <rating> / 5
-Cost      : ₹<cost> for two
-Why       : <explanation>
+Name         : <restaurant name>
+Cuisine      : <cuisine>
+Rating       : <rating> / 5
+Cost         : ₹<cost> for two
+Why          : <explanation>
+Image Prompt : <a vivid, appetizing 1-sentence description of this restaurant's signature dish or dining atmosphere, suitable as a text-to-image AI prompt — focus on the food, plating, and ambiance>
 """
 
 def build_candidates_table(candidates: pd.DataFrame) -> str:

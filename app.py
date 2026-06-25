@@ -157,6 +157,7 @@ class RecommendationCard(BaseModel):
     cost:         str
     why:          str
     hallucinated: bool = False
+    image_prompt: str  = ""
 
 
 class RecommendResponse(BaseModel):
