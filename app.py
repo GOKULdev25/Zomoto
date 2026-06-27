@@ -35,7 +35,7 @@ from src.filter_engine import filter_restaurants
 from src.prompt_builder import build_system_prompt, build_user_prompt
 from src.groq_client import get_recommendation
 from src.output_formatter import parse_llm_response, format_recommendation_card
-from src.image_gen import generate_image_b64
+from src.image_gen import generate_image_b64, test_image_generation
 
 load_dotenv()
 
@@ -177,6 +177,7 @@ class HealthResponse(BaseModel):
     dataset_loaded: bool
     dataset_rows:   int
     groq_key_set:   bool
+    hf_token_set:   bool
     model:          str
 
 
@@ -201,8 +202,25 @@ def health() -> HealthResponse:
         dataset_loaded = _df is not None,
         dataset_rows   = len(_df) if _df is not None else 0,
         groq_key_set   = bool(os.getenv("GROQ_API_KEY")),
+        hf_token_set   = bool(os.getenv("HF_TOKEN")),
         model          = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
     )
+
+
+@app.get(
+    "/debug/test-image",
+    summary="Test FLUX.1-schnell image generation",
+    tags=["Debug"],
+)
+async def debug_test_image():
+    """
+    Diagnostic endpoint — tests FLUX.1-schnell image generation with all
+    available providers and returns detailed results including error messages.
+    Use this to debug why images aren't appearing.
+    """
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(None, test_image_generation)
+    return result
 
 
 @app.post(
