@@ -273,6 +273,7 @@ port = int(os.getenv("PORT", 8000))
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `GROQ_API_KEY` | ✅ Yes | — | Groq Cloud API key |
+| `HF_TOKEN` | ✅ Yes | — | HuggingFace Inference API token (for FLUX images) |
 | `GROQ_MODEL` | No | `llama-3.3-70b-versatile` | LLM model to use |
 | `GROQ_TEMPERATURE` | No | `0.3` | LLM temperature |
 | `HF_DATASET_NAME` | No | `ManikaSaini/zomato-restaurant-recommendation` | Dataset identifier |
@@ -283,6 +284,7 @@ port = int(os.getenv("PORT", 8000))
 | `BUDGET_MEDIUM_MAX` | No | `1500` | Medium budget threshold (INR) |
 | `FRONTEND_URL` | ✅ Yes | — | Your Vercel production URL (for CORS) |
 | `PORT` | Auto | — | Injected by Railway — do NOT set manually |
+
 
 ### Vercel (Frontend)
 

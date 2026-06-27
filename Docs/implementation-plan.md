@@ -1,5 +1,5 @@
 # Implementation Plan: Zomoto AI Restaurant Recommendation System
-### Groq LLM (Free Tier) | Phase-wise | v1.1 — React UI Edition
+### Groq LLM (Free Tier) + FLUX.1-schnell Image Gen | Phase-wise | v1.2
 
 ---
 
@@ -7,12 +7,14 @@
 
 | Item | Detail |
 |------|--------|
-| Total Phases | 6 (Phase 5 split into 5A + 5B) |
+| Total Phases | 7 (Phase 5 split into 5A + 5B) |
 | LLM | Groq Free Tier — `llama-3.3-70b-versatile` |
-| Backend API | FastAPI (serves Python backend over HTTP) |
-| Frontend UI | React + Vite (modern, high-quality SPA) |
+| Image Gen | HuggingFace Inference API — `FLUX.1-schnell` via nscale provider |
+| Backend API | FastAPI (async, serves Python backend over HTTP) |
+| Frontend UI | React + Vite + TypeScript + TailwindCSS |
 | Dataset | HuggingFace `ManikaSaini/zomato-restaurant-recommendation` |
-| Language | Python 3.10+ (backend) · TypeScript/JavaScript (frontend) |
+| Language | Python 3.10+ (backend) · TypeScript (frontend) |
+| Deployment | Railway (backend) + Vercel (frontend) |
 
 ### Phase Summary
 
@@ -24,6 +26,7 @@ Phase 4 → Groq LLM Integration (Prompt + API)
 Phase 5A → Backend Completion (output_formatter.py + FastAPI server)
 Phase 5B → React Frontend (modern high-quality UI)
 Phase 6 → Polish, Testing & Final Integration
+Phase 7 → AI Image Generation (HuggingFace FLUX.1-schnell)
 ```
 
 ---
@@ -38,10 +41,14 @@ Phase 6 → Polish, Testing & Final Integration
 
 ```
 zomoto/
-├── app.py                  ← FastAPI entry point (replaces Streamlit)
-├── .env                    ← GROQ_API_KEY goes here
+├── app.py                  ← FastAPI async entry point
+├── .env                    ← GROQ_API_KEY + HF_TOKEN
+├── .env.example            ← Template for required env vars
 ├── .gitignore
 ├── requirements.txt
+├── Procfile                ← Railway start command
+├── railway.toml            ← Railway deploy config
+├── runtime.txt             ← Python version for Railway
 ├── src/
 │   ├── __init__.py
 │   ├── data_loader.py
@@ -49,10 +56,17 @@ zomoto/
 │   ├── filter_engine.py
 │   ├── prompt_builder.py
 │   ├── groq_client.py
-│   └── output_formatter.py
-├── frontend/               ← React + Vite app (added in Phase 5B)
+│   ├── output_formatter.py
+│   └── image_gen.py        ← HuggingFace FLUX.1-schnell (Phase 7)
+├── frontend/               ← React + Vite app (Phase 5B)
 │   ├── src/
+│   │   ├── App.tsx
+│   │   ├── api.ts
+│   │   ├── ShaderBackground.tsx
+│   │   └── components/
 │   ├── public/
+│   ├── vite.config.ts
+│   ├── vercel.json
 │   └── package.json
 ├── tests/
 │   ├── __init__.py
@@ -64,7 +78,8 @@ zomoto/
     ├── context.md
     ├── architecture.md
     ├── edge-cases.md
-    └── implementation-plan.md
+    ├── implementation-plan.md
+    └── deployment-plan.md
 ```
 
 ### 1.2 Create `requirements.txt`
@@ -1273,6 +1288,153 @@ Update `README.md` with:
 
 ---
 
+## Phase 7 — AI Image Generation (HuggingFace FLUX.1-schnell) ✅
+
+**Goal**: Generate AI restaurant images using HuggingFace FLUX.1-schnell, embedded as base64 in the recommendation response so cards appear complete with images.
+
+**Files**: `src/image_gen.py`, `app.py`, `frontend/src/api.ts`, `frontend/src/App.tsx`
+
+**Duration**: ~1 hour
+
+---
+
+### 7.1 Architecture Decision
+
+**User Flow**: Search → single loading state → all cards appear with images already loaded.
+
+Images are generated **inside** the `/recommend` endpoint, in parallel with each other via `asyncio.gather`. The frontend shows a single loading spinner until the full response (cards + images) is ready.
+
+```
+Backend /recommend:
+  Step 1: LLM → get restaurant list + image prompts (~3-5s)
+  Step 2: Generate N images in PARALLEL via FLUX.1-schnell (~8-12s)
+           asyncio.gather([generate(card1), generate(card2), ...])
+  Step 3: Encode each image as base64 string
+  Step 4: Return full response with image_b64 field on each card
+```
+
+---
+
+### 7.2 Image Generation Module — `src/image_gen.py`
+
+```python
+from huggingface_hub import InferenceClient
+import io, base64
+
+client = InferenceClient(provider="nscale", api_key=os.getenv("HF_TOKEN"))
+
+def generate_image_b64(image_prompt: str) -> str:
+    """Generate image via FLUX.1-schnell, return base64 PNG string."""
+    pil_image = client.text_to_image(
+        image_prompt[:400],
+        model="black-forest-labs/FLUX.1-schnell",
+    )
+    buf = io.BytesIO()
+    pil_image.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+```
+
+Key features:
+- Lazy-initialized `InferenceClient` (module-level singleton)
+- Returns `""` on failure (HF_TOKEN missing, API error) — graceful degradation
+- Prompt truncated to 400 chars for FLUX compatibility
+
+---
+
+### 7.3 Backend Integration — `app.py`
+
+**Changes to `/recommend` endpoint:**
+
+1. **`RecommendationCard`** Pydantic model: added `image_b64: str = ""` field
+2. **Endpoint made `async`**: required for `asyncio.gather`
+3. **Parallel image generation** inserted after LLM response parsing:
+
+```python
+# Generate all images in parallel (async + thread pool)
+loop = asyncio.get_running_loop()
+image_tasks = [
+    loop.run_in_executor(None, generate_image_b64, card.image_prompt)
+    for card in cards
+]
+b64_results = list(await asyncio.gather(*image_tasks))
+
+for card, b64 in zip(cards, b64_results):
+    card.image_b64 = b64
+```
+
+---
+
+### 7.4 LLM Prompt Update — `src/prompt_builder.py`
+
+The system prompt now instructs the LLM to produce an `Image Prompt` field per recommendation:
+
+```
+Image Prompt : <a vivid, appetizing 1-sentence description of this restaurant's
+               signature dish or dining atmosphere, suitable as a text-to-image AI prompt>
+```
+
+The `output_formatter.py` extracts this field and maps it to `image_prompt` in the response card.
+
+---
+
+### 7.5 Frontend Changes
+
+**`frontend/src/api.ts`:**
+- Added `image_b64: string` to `RecommendationCard` interface
+- Removed Pollinations.ai helper functions (replaced by backend FLUX)
+- Extended axios timeout to 120s (LLM + image generation)
+
+**`frontend/src/App.tsx`:**
+- `renderCard` uses `data:image/png;base64,${rec.image_b64}` as `<img src>`
+- Removed per-image shimmer/loading/retry state (not needed — images arrive pre-loaded)
+- Fallback: restaurant-icon placeholder when `image_b64` is empty
+
+---
+
+### 7.6 Dependencies Added
+
+**`requirements.txt`:**
+```
+huggingface_hub==0.30.2
+Pillow>=10.0.0
+```
+
+**`.env.example`:**
+```
+# HuggingFace Inference API — for FLUX.1-schnell restaurant image generation
+# Get your free token at: https://huggingface.co/settings/tokens
+HF_TOKEN=hf_your_token_here
+```
+
+---
+
+### 7.7 Production Deployment
+
+For production on **Railway**, add `HF_TOKEN` as an environment variable:
+
+| Variable | Value | Where to Set |
+|----------|-------|-------------|
+| `HF_TOKEN` | `hf_your_actual_token` | Railway Dashboard → Variables |
+
+The FLUX image generation works identically in development and production — same `InferenceClient` call, same nscale provider. No code changes needed between environments.
+
+If `HF_TOKEN` is not set on Railway, the backend still works — cards appear without images (graceful degradation).
+
+---
+
+### ✅ Phase 7 Done When:
+- [x] `src/image_gen.py` generates FLUX images and returns base64 strings
+- [x] `/recommend` generates all images in parallel via `asyncio.gather`
+- [x] `RecommendationCard` has `image_b64` field (base64 PNG)
+- [x] Frontend renders images from `data:image/png;base64,...`
+- [x] Fallback placeholder shown when `image_b64` is empty
+- [x] TypeScript compiles with 0 errors
+- [x] `huggingface_hub` + `Pillow` added to `requirements.txt`
+- [x] `HF_TOKEN` documented in `.env.example`
+- [x] Production deployment: `HF_TOKEN` added as Railway env variable
+
+---
+
 ## Complete Completion Checklist
 
 ```
@@ -1308,10 +1470,10 @@ Phase 4 — Groq LLM
   ✅ Unit tests pass
 
 Phase 5A — Backend API
-  ✅ output_formatter.py parses LLM output
+  ✅ output_formatter.py parses LLM output + image_prompt
   ✅ Hallucination cross-check implemented
-  ✅ FastAPI app.py with /health + /recommend
-  ✅ CORS enabled for React dev server
+  ✅ FastAPI app.py with /health + /recommend (async)
+  ✅ CORS enabled for React dev server + production
   ✅ Proper error responses (404, 500, 503)
   ✅ Token-limit adaptive candidate count
 
@@ -1328,8 +1490,19 @@ Phase 6 — Final
   ✅ Manual test cases verified
   ✅ requirements.txt pinned
   ✅ App demo-ready
+
+Phase 7 — AI Image Generation (FLUX.1-schnell)
+  ✅ src/image_gen.py wraps HuggingFace InferenceClient
+  ✅ FLUX.1-schnell images generated via nscale provider
+  ✅ Parallel generation in /recommend (asyncio.gather)
+  ✅ Base64 PNG embedded in RecommendationCard.image_b64
+  ✅ Frontend renders data:image/png;base64 directly
+  ✅ Graceful fallback when HF_TOKEN not set
+  ✅ huggingface_hub + Pillow in requirements.txt
+  ✅ HF_TOKEN in .env.example + Railway env variables
+  ✅ TypeScript compiles with 0 errors
 ```
 
 ---
 
-*Implementation Plan — Zomoto Project | Groq Free LLM | v1.1 React Edition | 2026-06-21*
+*Implementation Plan — Zomoto Project | Groq Free LLM + FLUX.1-schnell | v1.2 | 2026-06-27*

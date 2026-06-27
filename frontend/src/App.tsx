@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { ShaderBackground } from './ShaderBackground';
 import axios from 'axios';
-import { getRecommendations, getRestaurantImageUrl } from './api';
+import { getRecommendations } from './api';
 import type { RecommendRequest, RecommendResponse, RecommendationCard } from './api';
 import { CustomDropdown } from './components/CustomDropdown';
 import { MultiSelectDropdown } from './components/MultiSelectDropdown';
@@ -72,8 +72,8 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     setResults(null);
-    setImageStates({});
     setMobileDrawer(false);
+
 
     try {
       const data = await getRecommendations(req);
@@ -156,32 +156,12 @@ const App: React.FC = () => {
     if (e.key === 'Enter' && !loading && locations.length > 0) handleSearch();
   };
 
-  // ── Image state tracking with retry ─────────────────────────────────────────
-  const MAX_IMAGE_RETRIES = 2;
-  const [imageStates, setImageStates] = useState<Record<string, { status: 'loading' | 'loaded' | 'error'; attempt: number }>>({});
-
-  const handleImageLoad = (key: string) => {
-    setImageStates(prev => ({ ...prev, [key]: { ...prev[key], status: 'loaded' } }));
-  };
-
-  const handleImageError = (key: string) => {
-    setImageStates(prev => {
-      const current = prev[key] || { status: 'loading', attempt: 0 };
-      if (current.attempt < MAX_IMAGE_RETRIES) {
-        // Retry with incremented attempt (changes the seed → new URL)
-        return { ...prev, [key]: { status: 'loading', attempt: current.attempt + 1 } };
-      }
-      // All retries exhausted — show fallback
-      return { ...prev, [key]: { status: 'error', attempt: current.attempt } };
-    });
-  };
-
-  // ── Render card ──────────────────────────────────────────────────────────────
+  // ── Render card ──────────────────────────────────────────────────────────
+  // Images arrive pre-generated from the backend as base64 PNG strings.
+  // No lazy loading, no shimmer — cards appear complete.
   const renderCard = (rec: RecommendationCard, idx: number) => {
     const medal = MEDAL_STYLES[rec.rank] ?? MEDAL_STYLES['3'];
-    const imageKey = `${rec.name}-${idx}`;
-    const imgState = imageStates[imageKey] || { status: 'loading', attempt: 0 };
-    const imageUrl = rec.image_prompt ? getRestaurantImageUrl(rec.image_prompt, imgState.attempt) : '';
+    const imageSrc = rec.image_b64 ? `data:image/png;base64,${rec.image_b64}` : '';
 
     return (
       <motion.div
@@ -197,37 +177,16 @@ const App: React.FC = () => {
           <span className={`font-label-sm text-label-sm font-bold tracking-wider ${medal.text}`}>RANK {rec.rank}</span>
         </div>
 
-        {/* AI-Generated Restaurant Image */}
+        {/* FLUX.1-schnell AI-Generated Restaurant Image */}
         <div className="h-48 w-full relative overflow-hidden bg-surface-container-highest flex-shrink-0">
-          {/* Shimmer loading animation */}
-          {imgState.status === 'loading' && (
-            <div className="absolute inset-0 z-0">
-              <div className="absolute inset-0 bg-gradient-to-r from-surface-container via-surface-container-high to-surface-container animate-pulse" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="flex flex-col items-center gap-2 opacity-50">
-                  <span className="material-symbols-outlined text-4xl text-primary animate-pulse">auto_awesome</span>
-                  <span className="text-xs text-on-surface-variant font-medium">Generating image…</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Actual AI-generated image */}
-          {imageUrl && imgState.status !== 'error' && (
+          {imageSrc ? (
             <img
-              src={imageUrl}
+              src={imageSrc}
               alt={`AI-generated image of ${rec.display_name}`}
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
-                imgState.status === 'loaded' ? 'opacity-100' : 'opacity-0'
-              }`}
-              onLoad={() => handleImageLoad(imageKey)}
-              onError={() => handleImageError(imageKey)}
-              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover"
             />
-          )}
-
-          {/* Fallback placeholder (shown after all retries exhausted or no prompt) */}
-          {(imgState.status === 'error' || !imageUrl) && (
+          ) : (
+            // Fallback: HF_TOKEN not set or image generation failed
             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-tr from-surface to-surface-variant opacity-70 z-0">
               <span className="material-symbols-outlined text-8xl text-primary opacity-20">restaurant</span>
             </div>
@@ -569,7 +528,7 @@ const App: React.FC = () => {
               <div className="relative w-full max-w-2xl h-64 hidden md:flex justify-center items-center">
                 <div className="absolute glass-panel rounded-xl w-52 h-64 p-md -rotate-12 -translate-x-40 translate-y-6 shadow-2xl opacity-60 overflow-hidden flex flex-col transition-all duration-500 hover:-translate-x-48 hover:-rotate-6 hover:opacity-100 hover:z-30">
                   <div className="w-full h-24 rounded-lg bg-surface-container-highest mb-sm relative overflow-hidden">
-                    <span className="material-symbols-outlined text-5xl text-primary absolute inset-0 flex items-center justify-center opacity-30">restaurant</span>
+                    <img src="/images/toit.png" alt="Toit Brewpub" className="w-full h-full object-cover" />
                   </div>
                   <p className="font-headline-md text-sm font-bold text-on-surface truncate">Toit Brewpub</p>
                   <p className="text-xs text-on-surface-variant truncate">Microbrewery · 4.8 ★</p>
@@ -578,7 +537,7 @@ const App: React.FC = () => {
                 <div className="absolute glass-panel bg-surface-container rounded-xl w-60 h-72 p-md z-20 shadow-2xl overflow-hidden flex flex-col border border-primary/30 transition-transform duration-500 hover:-translate-y-2">
                   <div className="absolute top-3 right-3 bg-secondary/20 border border-secondary/50 px-2 py-0.5 rounded-full text-secondary text-[10px] uppercase tracking-wider">Top Match</div>
                   <div className="w-full h-28 rounded-lg bg-surface-container-highest mb-sm relative overflow-hidden">
-                    <span className="material-symbols-outlined text-5xl text-secondary absolute inset-0 flex items-center justify-center opacity-30">local_dining</span>
+                    <img src="/images/truffles.png" alt="Truffles" className="w-full h-full object-cover" />
                   </div>
                   <p className="font-headline-md text-lg font-bold text-on-surface truncate mt-1">Truffles</p>
                   <p className="text-xs text-on-surface-variant truncate">American · 4.9 ★</p>
@@ -586,7 +545,7 @@ const App: React.FC = () => {
                 
                 <div className="absolute glass-panel rounded-xl w-52 h-64 p-md rotate-12 translate-x-40 translate-y-6 shadow-2xl opacity-60 overflow-hidden flex flex-col transition-all duration-500 hover:translate-x-48 hover:rotate-6 hover:opacity-100 hover:z-30">
                   <div className="w-full h-24 rounded-lg bg-surface-container-highest mb-sm relative overflow-hidden">
-                    <span className="material-symbols-outlined text-5xl text-primary absolute inset-0 flex items-center justify-center opacity-30">set_meal</span>
+                    <img src="/images/meghana.png" alt="Meghana Foods" className="w-full h-full object-cover" />
                   </div>
                   <p className="font-headline-md text-sm font-bold text-on-surface truncate">Meghana Foods</p>
                   <p className="text-xs text-on-surface-variant truncate">Biryani · 4.7 ★</p>

@@ -22,6 +22,7 @@ export interface RecommendationCard {
   why: string;
   hallucinated: boolean;
   image_prompt: string;
+  image_b64: string;  // Base64-encoded PNG from FLUX.1-schnell ("" if unavailable)
 }
 
 // Maps to RecommendResponse in app.py
@@ -33,32 +34,12 @@ export interface RecommendResponse {
   fallback_mode: boolean;
 }
 
-// ─── Image Generation Helper ──────────────────────────────────────────────────
-// Uses Pollinations.ai — 100% free, no API key, no signup required.
-// Keeps prompts short to avoid URL length issues that cause failures.
-const hashCode = (str: string): number => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-};
-
-export const getRestaurantImageUrl = (imagePrompt: string, attempt = 0): string => {
-  // Keep prompt short — long URLs cause Pollinations to fail
-  const shortPrompt = imagePrompt.slice(0, 120);
-  const encoded = encodeURIComponent(shortPrompt);
-  const seed = hashCode(imagePrompt) + attempt; // unique seed, changes on retry
-  return `https://image.pollinations.ai/prompt/${encoded}?width=600&height=400&seed=${seed}&nologo=true`;
-};
-
 // ─── Axios instance ───────────────────────────────────────────────────────────
 // Production: VITE_API_URL is set on Vercel (e.g. https://your-app.up.railway.app)
 // Development: falls back to /api which Vite proxies to localhost:8000
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
-  timeout: 60000, // 60s — LLM calls can be slow
+  timeout: 120000, // 120s — LLM call + parallel FLUX image generation
 });
 
 // ─── API call ─────────────────────────────────────────────────────────────────

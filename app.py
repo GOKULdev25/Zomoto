@@ -35,6 +35,7 @@ from src.filter_engine import filter_restaurants
 from src.prompt_builder import build_system_prompt, build_user_prompt
 from src.groq_client import get_recommendation
 from src.output_formatter import parse_llm_response, format_recommendation_card
+from src.image_gen import generate_image_b64
 
 load_dotenv()
 
@@ -158,6 +159,7 @@ class RecommendationCard(BaseModel):
     why:          str
     hallucinated: bool = False
     image_prompt: str  = ""
+    image_b64:    str  = ""   # Base64-encoded PNG — empty string when unavailable
 
 
 class RecommendResponse(BaseModel):
@@ -209,7 +211,7 @@ def health() -> HealthResponse:
     summary="Get AI restaurant recommendations",
     tags=["Recommendations"],
 )
-def recommend(req: RecommendRequest) -> RecommendResponse:
+async def recommend(req: RecommendRequest) -> RecommendResponse:
     """
     Full recommendation pipeline:
 
@@ -325,11 +327,31 @@ def recommend(req: RecommendRequest) -> RecommendResponse:
             fallback_mode    = True,
         )
 
-    # ── Format cards & return ─────────────────────────────────────────────────
+    # ── Format cards ──────────────────────────────────────────────────────────
     cards = [
         RecommendationCard(**format_recommendation_card(r))
         for r in parsed_recs[:req.top_n]
     ]
+
+    # ── Generate images in parallel via HuggingFace FLUX.1-schnell ────────────
+    # All N images are generated simultaneously so wait time ≈ 1 image, not N.
+    # If HF_TOKEN is not set or generation fails, image_b64 stays "" and
+    # the frontend shows the restaurant-icon placeholder.
+    loop = asyncio.get_running_loop()
+    image_tasks = [
+        loop.run_in_executor(None, generate_image_b64, card.image_prompt)
+        for card in cards
+    ]
+    b64_results: list[str] = list(await asyncio.gather(*image_tasks))
+
+    for card, b64 in zip(cards, b64_results):
+        card.image_b64 = b64
+
+    logger.info(
+        "Images generated: %d/%d succeeded.",
+        sum(1 for b in b64_results if b),
+        len(b64_results),
+    )
 
     logger.info("Returning %d recommendation card(s).", len(cards))
     return RecommendResponse(
@@ -340,10 +362,6 @@ def recommend(req: RecommendRequest) -> RecommendResponse:
         fallback_mode    = False,
     )
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Entry point
-# ═══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
