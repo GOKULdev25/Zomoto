@@ -43,11 +43,20 @@ def load_zomato_data() -> pd.DataFrame:
         logger.info("Local dataset loaded: %d rows, %d cols", len(df), len(df.columns))
         return df
 
-    logger.info("Loading dataset from HuggingFace directly via CSV url: %s", HF_DATASET_NAME)
-    url = f"https://huggingface.co/datasets/{HF_DATASET_NAME}/resolve/main/zomato.csv"
-    df = pd.read_csv(url, usecols=RAW_USE_COLS)
-    logger.info("Raw dataset loaded directly: %d rows, %d cols", len(df), len(df.columns))
-    return df
+    logger.info("Downloading dataset from HuggingFace to disk to avoid OOM...")
+    try:
+        from huggingface_hub import hf_hub_download
+        local_path = hf_hub_download(repo_id=HF_DATASET_NAME, repo_type="dataset", filename="zomato.csv")
+        logger.info("Dataset downloaded/cached at: %s", local_path)
+        df = pd.read_csv(local_path, usecols=RAW_USE_COLS, engine='c')
+        logger.info("Raw dataset loaded from local cache: %d rows, %d cols", len(df), len(df.columns))
+        return df
+    except Exception as e:
+        logger.error("hf_hub_download failed: %s, falling back to direct URL in-memory loading", e)
+        url = f"https://huggingface.co/datasets/{HF_DATASET_NAME}/resolve/main/zomato.csv"
+        df = pd.read_csv(url, usecols=RAW_USE_COLS)
+        logger.info("Raw dataset loaded directly: %d rows, %d cols", len(df), len(df.columns))
+        return df
 
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
