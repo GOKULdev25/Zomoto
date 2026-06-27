@@ -34,13 +34,18 @@ RAW_USE_COLS = [
 # ─────────────────────────────────────────────────────────────────────────────
 
 def load_zomato_data() -> pd.DataFrame:
-    """Load raw dataset directly from HuggingFace via streaming CSV."""
+    """Load raw dataset locally or fallback to HuggingFace via streaming CSV."""
+    import os
+    mock_path = "data/zomato_mock.csv"
+    if os.path.exists(mock_path):
+        logger.info("Loading dataset from local file: %s", mock_path)
+        df = pd.read_csv(mock_path, usecols=RAW_USE_COLS)
+        logger.info("Local dataset loaded: %d rows, %d cols", len(df), len(df.columns))
+        return df
+
     logger.info("Loading dataset from HuggingFace directly via CSV url: %s", HF_DATASET_NAME)
     url = f"https://huggingface.co/datasets/{HF_DATASET_NAME}/resolve/main/zomato.csv"
-    
-    # Load ONLY the columns we need to prevent OOM crashes on Railway free tier (~500MB RAM limit)
     df = pd.read_csv(url, usecols=RAW_USE_COLS)
-    
     logger.info("Raw dataset loaded directly: %d rows, %d cols", len(df), len(df.columns))
     return df
 
