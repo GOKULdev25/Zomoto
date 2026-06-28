@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { ShaderBackground } from './ShaderBackground';
-import axios from 'axios';
-import { getRecommendations } from './api';
+import { getRecommendationsStream } from './api';
 import type { RecommendRequest, RecommendResponse, RecommendationCard } from './api';
 import { CustomDropdown } from './components/CustomDropdown';
 import { MultiSelectDropdown } from './components/MultiSelectDropdown';
@@ -42,6 +41,83 @@ const BUDGET_OPTIONS = [
   { value: 'high',   label: 'Above 300rs' },
 ];
 
+// ── Render card ──────────────────────────────────────────────────────────
+// Images arrive pre-generated from the backend as base64 PNG strings via SSE stream.
+// No lazy loading, no shimmer — cards appear complete.
+const RecommendationCardView: React.FC<{ rec: RecommendationCard }> = ({ rec }) => {
+  const medal = MEDAL_STYLES[rec.rank] ?? MEDAL_STYLES['3'];
+  const imageSrc = rec.image_b64 ? `data:image/png;base64,${rec.image_b64}` : '';
+
+  return (
+    <motion.div
+      key={rec.rank + rec.name} // use a stable key
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className={`glass-panel rounded-xl overflow-hidden card-hover transition-all duration-300 relative flex flex-col`}
+    >
+      {/* Medal badge */}
+      <div className={`absolute top-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full border backdrop-blur-md ${medal.bg} ${medal.border}`}>
+        <span className={`material-symbols-outlined text-sm ${medal.text}`} style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+        <span className={`font-label-sm text-label-sm font-bold tracking-wider ${medal.text}`}>RANK {rec.rank}</span>
+      </div>
+
+      {/* FLUX.1-schnell AI-Generated Restaurant Image */}
+      <div className="h-48 w-full relative overflow-hidden bg-surface-container-highest flex-shrink-0">
+        {imageSrc ? (
+          <img
+            src={imageSrc}
+            alt={`AI-generated image of ${rec.display_name}`}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          // Fallback: HF_TOKEN not set or image generation failed
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-tr from-surface to-surface-variant opacity-70 z-0">
+            <span className="material-symbols-outlined text-8xl text-primary opacity-20">restaurant</span>
+          </div>
+        )}
+
+        {/* Bottom gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent z-10" />
+      </div>
+
+      {/* Card content */}
+      <div className="p-md flex-grow flex flex-col relative z-20 -mt-8">
+        {/* Hallucination warning */}
+        {rec.hallucinated && (
+          <div className="mb-2 px-2 py-1 rounded bg-error/10 border border-error/30 flex items-center gap-1">
+            <span className="material-symbols-outlined text-error text-sm">warning</span>
+            <span className="text-xs text-error">Result may need verification</span>
+          </div>
+        )}
+
+        <h2 className="font-headline-lg text-headline-lg text-on-surface mb-1 drop-shadow-md tracking-tight" title={rec.name}>
+          {rec.display_name}
+        </h2>
+        <p className="font-label-md text-label-md text-primary mb-3">{rec.cuisine}</p>
+
+        {/* Metrics row */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <span className="px-2 py-1 bg-surface-container rounded-md font-label-sm text-xs text-on-surface-variant flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px]">star</span> {rec.rating}
+          </span>
+          <span className="px-2 py-1 bg-surface-container rounded-md font-label-sm text-xs text-on-surface-variant flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px]">payments</span> {rec.cost}
+          </span>
+        </div>
+
+        {/* AI reasoning */}
+        <div className="mt-auto p-4 rounded-lg bg-surface-container-low border border-outline-variant/20">
+          <div className="flex gap-2 items-start">
+            <span className="material-symbols-outlined text-secondary mt-0.5 text-[18px]">psychology</span>
+            <p className="font-body-md text-sm text-on-surface-variant italic">"{rec.why}"</p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
 
@@ -60,9 +136,11 @@ const App: React.FC = () => {
   const [budget,         setBudget]         = useState('medium');
   const [minRating,      setMinRating]      = useState(3.5);
   const [topN,           setTopN]           = useState(3);
+  const [searchTopN,     setSearchTopN]     = useState(3);
 
   // ── UI state ─────────────────────────────────────────────────────────────────
   const [loading,        setLoading]        = useState(false);
+  const [isStreaming,    setIsStreaming]    = useState(false);
   const [results,        setResults]        = useState<RecommendResponse | null>(null);
   const [error,          setError]          = useState<string | null>(null);
   const [mobileDrawer,   setMobileDrawer]   = useState(false);
@@ -70,36 +148,64 @@ const App: React.FC = () => {
   // ── Search execution ─────────────────────────────────────────────────────────
   const executeSearch = useCallback(async (req: RecommendRequest) => {
     setLoading(true);
+    setIsStreaming(true);
     setError(null);
     setResults(null);
     setMobileDrawer(false);
-
+    setSearchTopN(req.top_n || 3);
 
     try {
-      const data = await getRecommendations(req);
-      setResults(data);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        if (!err.response) {
-          setError('Cannot connect to the recommendation service. Is the backend running?');
-        } else if (err.response.status === 422) {
-          const detail = err.response.data?.detail;
-          const msg = Array.isArray(detail)
-            ? detail.map((d: { msg: string }) => d.msg).join(', ')
-            : String(detail ?? 'Invalid input.');
-          setError(`Validation error: ${msg}`);
-        } else if (err.response.status === 404) {
-          setError(err.response.data?.detail ?? 'No restaurants found for that location.');
-        } else if (err.response.status === 503) {
-          setError(err.response.data?.detail ?? 'Server is not ready. Check backend logs.');
-        } else {
-          setError(`Server error: ${err.response.status}`);
+      const newResults: RecommendResponse = {
+        notice: '',
+        recommendations: [],
+        candidates_count: 0,
+        raw_llm: '',
+        fallback_mode: false,
+      };
+
+      const stream = getRecommendationsStream(req);
+      
+      let gotFirstEvent = false;
+
+      for await (const chunk of stream) {
+        if (!gotFirstEvent) {
+          setLoading(false);
+          setResults(newResults);
+          gotFirstEvent = true;
         }
+
+        if (chunk.type === 'metadata') {
+          newResults.notice = chunk.data.notice;
+          newResults.candidates_count = chunk.data.candidates_count;
+          setResults({ ...newResults });
+        } else if (chunk.type === 'card') {
+          newResults.recommendations.push(chunk.data);
+          setResults({ ...newResults });
+        } else if (chunk.type === 'error') {
+          newResults.fallback_mode = true;
+          newResults.raw_llm = chunk.data;
+          setResults({ ...newResults });
+        } else if (chunk.type === 'done') {
+          setResults({ ...newResults });
+        }
+      }
+      
+      // If the stream ended without any events (e.g. empty response)
+      if (!gotFirstEvent) {
+        setResults(newResults);
+      }
+
+    } catch (err: unknown) {
+      if ((err as any).status === 422) {
+        setError(`Validation error: ${(err as any).message}`);
+      } else if (err instanceof Error) {
+        setError((err as any).message);
       } else {
         setError(`Unexpected error: ${String(err)}`);
       }
     } finally {
       setLoading(false);
+      setIsStreaming(false);
     }
   }, []);
 
@@ -154,83 +260,6 @@ const App: React.FC = () => {
   // ── Enter-key support ────────────────────────────────────────────────────────
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !loading && locations.length > 0) handleSearch();
-  };
-
-  // ── Render card ──────────────────────────────────────────────────────────
-  // Images arrive pre-generated from the backend as base64 PNG strings.
-  // No lazy loading, no shimmer — cards appear complete.
-  const renderCard = (rec: RecommendationCard, idx: number) => {
-    const medal = MEDAL_STYLES[rec.rank] ?? MEDAL_STYLES['3'];
-    const imageSrc = rec.image_b64 ? `data:image/png;base64,${rec.image_b64}` : '';
-
-    return (
-      <motion.div
-        key={idx}
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
-        className={`glass-panel rounded-xl overflow-hidden card-hover transition-all duration-300 relative flex flex-col`}
-      >
-        {/* Medal badge */}
-        <div className={`absolute top-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full border backdrop-blur-md ${medal.bg} ${medal.border}`}>
-          <span className={`material-symbols-outlined text-sm ${medal.text}`} style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
-          <span className={`font-label-sm text-label-sm font-bold tracking-wider ${medal.text}`}>RANK {rec.rank}</span>
-        </div>
-
-        {/* FLUX.1-schnell AI-Generated Restaurant Image */}
-        <div className="h-48 w-full relative overflow-hidden bg-surface-container-highest flex-shrink-0">
-          {imageSrc ? (
-            <img
-              src={imageSrc}
-              alt={`AI-generated image of ${rec.display_name}`}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            // Fallback: HF_TOKEN not set or image generation failed
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-tr from-surface to-surface-variant opacity-70 z-0">
-              <span className="material-symbols-outlined text-8xl text-primary opacity-20">restaurant</span>
-            </div>
-          )}
-
-          {/* Bottom gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent z-10" />
-        </div>
-
-        {/* Card content */}
-        <div className="p-md flex-grow flex flex-col relative z-20 -mt-8">
-          {/* Hallucination warning */}
-          {rec.hallucinated && (
-            <div className="mb-2 px-2 py-1 rounded bg-error/10 border border-error/30 flex items-center gap-1">
-              <span className="material-symbols-outlined text-error text-sm">warning</span>
-              <span className="text-xs text-error">Result may need verification</span>
-            </div>
-          )}
-
-          <h2 className="font-headline-lg text-headline-lg text-on-surface mb-1 drop-shadow-md tracking-tight" title={rec.name}>
-            {rec.display_name}
-          </h2>
-          <p className="font-label-md text-label-md text-primary mb-3">{rec.cuisine}</p>
-
-          {/* Metrics row */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            <span className="px-2 py-1 bg-surface-container rounded-md font-label-sm text-xs text-on-surface-variant flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">star</span> {rec.rating}
-            </span>
-            <span className="px-2 py-1 bg-surface-container rounded-md font-label-sm text-xs text-on-surface-variant flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">payments</span> {rec.cost}
-            </span>
-          </div>
-
-          {/* AI reasoning */}
-          <div className="mt-auto p-4 rounded-lg bg-surface-container-low border border-outline-variant/20">
-            <div className="flex gap-2 items-start">
-              <span className="material-symbols-outlined text-secondary mt-0.5 text-[18px]">psychology</span>
-              <p className="font-body-md text-sm text-on-surface-variant italic">"{rec.why}"</p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    );
   };
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -624,25 +653,44 @@ const App: React.FC = () => {
                 )}
               </div>
 
-              {/* Recommendation cards — dynamic grid based on topN */}
-              {results.recommendations.length > 0 && (
+              {/* Recommendation cards — dynamic grid based on searchTopN */}
+              {(results.recommendations.length > 0 || isStreaming) && (
                 <div className={`grid gap-md mb-xl ${
-                  results.recommendations.length === 1
-                    ? 'grid-cols-1 max-w-md mx-auto'
-                    : results.recommendations.length === 2
-                    ? 'grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto'
-                    : results.recommendations.length <= 3
+                  searchTopN === 1
+                    ? 'grid-cols-1 max-w-md'
+                    : searchTopN === 2
+                    ? 'grid-cols-1 md:grid-cols-2 max-w-3xl'
+                    : searchTopN <= 3
                     ? 'grid-cols-1 md:grid-cols-3'
-                    : results.recommendations.length === 4
+                    : searchTopN === 4
                     ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
                     : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
                 }`}>
-                  {results.recommendations.map((rec, idx) => renderCard(rec, idx))}
+                  {results.recommendations.map((rec, idx) => <RecommendationCardView key={idx} rec={rec} />)}
+                  
+                  {isStreaming && Array.from({ length: Math.max(0, searchTopN - results.recommendations.length) }).map((_, idx) => (
+                    <div key={`skeleton-${idx}`} className="glass-panel rounded-xl h-[420px] animate-pulse flex flex-col overflow-hidden relative">
+                       {/* Skeleton medal */}
+                       <div className="absolute top-4 left-4 z-20 h-6 w-20 bg-surface-container-highest rounded-full" />
+                       {/* Skeleton image */}
+                       <div className="h-48 w-full bg-surface-container-highest flex-shrink-0" />
+                       {/* Skeleton content */}
+                       <div className="p-md flex-grow flex flex-col relative z-20 -mt-8 gap-3">
+                          <div className="h-8 w-3/4 bg-surface-container-highest rounded mt-4" />
+                          <div className="h-4 w-1/2 bg-surface-container-highest rounded" />
+                          <div className="flex gap-2 mt-1">
+                            <div className="h-6 w-16 bg-surface-container-highest rounded-md" />
+                            <div className="h-6 w-24 bg-surface-container-highest rounded-md" />
+                          </div>
+                          <div className="mt-auto h-16 w-full bg-surface-container-highest rounded-lg" />
+                       </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
               {/* No results */}
-              {!results.fallback_mode && results.recommendations.length === 0 && (
+              {!isStreaming && !results.fallback_mode && results.recommendations.length === 0 && (
                 <div className="glass-panel rounded-xl p-8 text-center mb-xl">
                   <span className="material-symbols-outlined text-on-surface-variant text-5xl mb-4 block">search_off</span>
                   <h2 className="font-headline-md text-headline-md text-on-surface mb-2">No restaurants found</h2>

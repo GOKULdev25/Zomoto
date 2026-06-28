@@ -2,7 +2,7 @@ import pandas as pd
 import random
 
 # Generate a mock Zomato dataset with required columns
-locations = ["Koramangala", "Indiranagar", "BTM", "Jayanagar", "Whitefield", "Marathahalli", "HSR"]
+locations = ["Bangalore", "Koramangala", "Indiranagar", "BTM", "Jayanagar", "Whitefield", "Marathahalli", "HSR"]
 cuisines = ["North Indian", "South Indian", "Chinese", "Italian", "American, Continental", "Cafe", "Desserts", "Biryani"]
 dining_types = ["Casual Dining", "Cafe", "Quick Bites", "Delivery", "Dessert Parlor", "Microbrewery"]
 

@@ -24,7 +24,8 @@ if sys.version_info < (3, 10):
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+import json
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, field_validator
 from dotenv import load_dotenv
 import uvicorn
@@ -33,8 +34,8 @@ from src.data_loader import get_dataframe
 from src.user_input import UserPreferences, BUDGET_MAP
 from src.filter_engine import filter_restaurants
 from src.prompt_builder import build_system_prompt, build_user_prompt
-from src.groq_client import get_recommendation
-from src.output_formatter import parse_llm_response, format_recommendation_card
+from src.groq_client import get_recommendation, get_recommendation_stream
+from src.output_formatter import parse_llm_response, parse_llm_stream, format_recommendation_card
 from src.image_gen import generate_image_b64, test_image_generation
 
 load_dotenv()
@@ -181,6 +182,14 @@ class HealthResponse(BaseModel):
     model:          str
 
 
+class ImageRequest(BaseModel):
+    image_prompt: str
+
+
+class ImageResponse(BaseModel):
+    image_b64: str
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Endpoints
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -221,6 +230,19 @@ async def debug_test_image():
     loop = asyncio.get_running_loop()
     result = await loop.run_in_executor(None, test_image_generation)
     return result
+
+
+@app.post(
+    "/recommend/image",
+    response_model=ImageResponse,
+    summary="Generate a single restaurant image asynchronously",
+    tags=["Recommendations"],
+)
+async def generate_image(req: ImageRequest) -> ImageResponse:
+    """Generate or retrieve a cached image for a given prompt."""
+    loop = asyncio.get_running_loop()
+    b64 = await loop.run_in_executor(None, generate_image_b64, req.image_prompt)
+    return ImageResponse(image_b64=b64)
 
 
 @app.post(
@@ -351,25 +373,10 @@ async def recommend(req: RecommendRequest) -> RecommendResponse:
         for r in parsed_recs[:req.top_n]
     ]
 
-    # ── Generate images in parallel via HuggingFace FLUX.1-schnell ────────────
-    # All N images are generated simultaneously so wait time ≈ 1 image, not N.
-    # If HF_TOKEN is not set or generation fails, image_b64 stays "" and
-    # the frontend shows the restaurant-icon placeholder.
-    loop = asyncio.get_running_loop()
-    image_tasks = [
-        loop.run_in_executor(None, generate_image_b64, card.image_prompt)
-        for card in cards
-    ]
-    b64_results: list[str] = list(await asyncio.gather(*image_tasks))
-
-    for card, b64 in zip(cards, b64_results):
-        card.image_b64 = b64
-
-    logger.info(
-        "Images generated: %d/%d succeeded.",
-        sum(1 for b in b64_results if b),
-        len(b64_results),
-    )
+    # ── Images are now lazy-loaded via /recommend/image ───────────────────────
+    # The frontend will call /recommend/image for each card asynchronously.
+    # We return the cards immediately without waiting for FLUX.
+    logger.info("Skipping synchronous image generation to reduce latency.")
 
     logger.info("Returning %d recommendation card(s).", len(cards))
     return RecommendResponse(
@@ -381,6 +388,98 @@ async def recommend(req: RecommendRequest) -> RecommendResponse:
     )
 
 
+@app.post(
+    "/recommend/stream",
+    summary="Get AI restaurant recommendations (streaming)",
+    tags=["Recommendations"],
+)
+async def recommend_stream(req: RecommendRequest):
+    """
+    Streaming version of the recommendation pipeline.
+    Yields JSON-lines Server-Sent Events with restaurant cards as they are generated.
+    """
+    if _df is None:
+        detail = f"Dataset is not loaded: {_df_load_error}" if _df_load_error else "Dataset is not loaded. Check server logs."
+        raise HTTPException(status_code=503, detail=detail)
+
+    if not os.getenv("GROQ_API_KEY"):
+        raise HTTPException(status_code=503, detail="GROQ_API_KEY is not configured on the server. Add it to .env.")
+
+    try:
+        prefs = UserPreferences(
+            location   = req.location,
+            budget     = req.budget,
+            cuisine    = req.cuisine,
+            min_rating = req.min_rating,
+            extras     = req.extras,
+        )
+        prefs.validate()
+    except (ValueError, AssertionError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    candidates, notice = filter_restaurants(_df, prefs)
+    if candidates.empty:
+        raise HTTPException(status_code=404, detail=f"No restaurants found in '{prefs.sanitized_location()}'. Try a different city.")
+
+    selected = candidates
+    user_prompt = build_user_prompt(prefs, selected, req.top_n)
+    for n in [15, 10, req.top_n + 2]:
+        selected = candidates.head(n)
+        user_prompt = build_user_prompt(prefs, selected, req.top_n)
+        word_count = len(user_prompt.split())
+        if word_count < 1500:
+            break
+
+    system_prompt = build_system_prompt(req.top_n)
+    
+    async def sse_generator():
+        # 1. Yield metadata
+        metadata = {
+            "type": "metadata",
+            "data": {
+                "notice": notice,
+                "candidates_count": len(selected)
+            }
+        }
+        yield f"data: {json.dumps(metadata)}\n\n"
+        
+        # 2. Call LLM as stream
+        llm_stream = get_recommendation_stream(system_prompt, user_prompt)
+        candidate_names = selected["name"].tolist()
+        
+        loop = asyncio.get_running_loop()
+        count = 0
+        
+        async for parsed_rec in parse_llm_stream(llm_stream, candidate_names):
+            if "error" in parsed_rec:
+                yield f"data: {json.dumps({'type': 'error', 'data': parsed_rec['error']})}\n\n"
+                break
+                
+            count += 1
+            if count > req.top_n:
+                break # We have enough
+                
+            card_dict = format_recommendation_card(parsed_rec)
+            
+            # Generate image concurrently
+            image_prompt = card_dict.get("image_prompt", "")
+            if image_prompt:
+                try:
+                    b64 = await loop.run_in_executor(None, generate_image_b64, image_prompt)
+                    card_dict["image_b64"] = b64
+                except Exception as e:
+                    logger.error("Image gen failed in stream: %s", e)
+                    card_dict["image_b64"] = ""
+            else:
+                card_dict["image_b64"] = ""
+                
+            yield f"data: {json.dumps({'type': 'card', 'data': card_dict})}\n\n"
+            
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+    return StreamingResponse(sse_generator(), media_type="text/event-stream")
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(
@@ -388,5 +487,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
         reload=True,
-        log_level="info",
+        log_level="info", # triggers reload again
     )

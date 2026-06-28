@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import Optional
+from typing import Optional, AsyncGenerator, AsyncIterable
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +77,67 @@ def parse_llm_response(
 
     logger.info("parse_llm_response: parsed %d recommendation block(s).", len(recommendations))
     return recommendations
+
+
+async def parse_llm_stream(
+    stream: AsyncIterable[str],
+    candidate_names: Optional[list[str]] = None,
+):
+    """
+    Consumes an async generator of LLM tokens and yields parsed recommendation dicts
+    as soon as a complete 'RANK' block is detected.
+    """
+    buffer = ""
+    
+    def _parse_single_block(block_text: str) -> dict | None:
+        block_text = _strip_code_fences(block_text)
+        lines = block_text.strip().splitlines()
+        if not lines:
+            return None
+        rec: dict = {"rank": lines[0].strip()}
+        for line in lines[1:]:
+            if ":" in line:
+                key, _, val = line.partition(":")
+                rec[key.strip().lower()] = val.strip()
+                
+        if candidate_names and rec.get("name"):
+            rec_name_lower = rec["name"].lower()
+            matched = any(
+                rec_name_lower in cn.lower() or cn.lower() in rec_name_lower
+                for cn in candidate_names
+            )
+            if not matched:
+                logger.warning("Possible LLM hallucination — '%s' not in candidate list.", rec["name"])
+                rec["name"] += " ⚠️"
+                rec["hallucinated"] = True
+            else:
+                rec["hallucinated"] = False
+        return rec
+
+    async for chunk in stream:
+        if chunk.startswith("❌"):
+            yield {"error": chunk}
+            return
+            
+        buffer += chunk
+        
+        blocks = buffer.split("RANK")
+        
+        if len(blocks) > 2:
+            for i in range(1, len(blocks) - 1):
+                parsed = _parse_single_block(blocks[i])
+                if parsed:
+                    yield parsed
+                    
+            buffer = "RANK" + blocks[-1]
+            
+    blocks = buffer.split("RANK")
+    if len(blocks) >= 2:
+        parsed = _parse_single_block(blocks[-1])
+        if parsed:
+            yield parsed
+
+
 
 
 def format_recommendation_card(rec: dict) -> dict:

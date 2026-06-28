@@ -2,7 +2,7 @@ import re
 import time
 import os
 import logging
-from groq import Groq, RateLimitError
+from groq import Groq, AsyncGroq, RateLimitError
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -72,3 +72,49 @@ def get_recommendation(system_prompt: str, user_prompt: str) -> str:
 
     # All retries exhausted
     return "❌ Groq API rate limit reached. Please wait a moment and try again."
+
+
+import asyncio
+
+async def get_recommendation_stream(system_prompt: str, user_prompt: str):
+    """
+    Call the Groq LLM and yield chunks as they arrive.
+    """
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        logger.error("GROQ_API_KEY is not set.")
+        yield "❌ GROQ_API_KEY is not configured. Add it to your .env file."
+        return
+
+    client = AsyncGroq(api_key=api_key)
+
+    for attempt in range(MAX_RETRIES):
+        model = PRIMARY_MODEL if attempt < (MAX_RETRIES - 1) else FALLBACK_MODEL
+        try:
+            stream = await client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user",   "content": user_prompt},
+                ],
+                temperature=GROQ_TEMPERATURE,
+                max_tokens=1024,
+                stream=True
+            )
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+            return # successfully streamed
+
+        except RateLimitError:
+            wait = 2 ** attempt
+            logger.warning("Groq rate limit hit (attempt %d). Waiting %ds…", attempt + 1, wait)
+            await asyncio.sleep(wait)
+
+        except Exception as exc:
+            logger.exception("Groq API error on attempt %d: %s", attempt + 1, exc)
+            yield f"❌ LLM service error: {exc}. Please try again later."
+            return
+
+    yield "❌ Groq API rate limit reached. Please wait a moment and try again."
+

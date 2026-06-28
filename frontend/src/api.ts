@@ -49,3 +49,73 @@ export const getRecommendations = async (
   const response = await api.post<RecommendResponse>('/recommend', request);
   return response.data;
 };
+
+// ─── Image Lazy Loading ───────────────────────────────────────────────────────
+export const generateImage = async (image_prompt: string): Promise<string> => {
+  try {
+    const response = await api.post<{ image_b64: string }>('/recommend/image', { image_prompt });
+    return response.data.image_b64;
+  } catch (error) {
+    console.error("Failed to generate image:", error);
+    return "";
+  }
+};
+
+// ─── SSE Streaming API call ───────────────────────────────────────────────────
+export async function* getRecommendationsStream(
+  request: RecommendRequest
+): AsyncGenerator<any, void, unknown> {
+  const baseURL = import.meta.env.VITE_API_URL || '/api';
+  const response = await fetch(`${baseURL}/recommend/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    let errorDetail = 'Server Error';
+    try {
+      const errBody = await response.json();
+      if (errBody && errBody.detail) errorDetail = errBody.detail;
+    } catch (e) {
+      errorDetail = response.statusText || String(response.status);
+    }
+    const err = new Error(errorDetail) as any;
+    err.status = response.status;
+    throw err;
+  }
+
+  if (!response.body) {
+    throw new Error('ReadableStream not supported.');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n\n');
+    
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const dataStr = line.slice(6);
+        if (!dataStr) continue;
+        try {
+          const data = JSON.parse(dataStr);
+          yield data;
+        } catch (e) {
+          console.error("Failed to parse SSE data:", dataStr);
+        }
+      }
+    }
+  }
+}
+

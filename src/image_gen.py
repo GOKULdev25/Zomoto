@@ -28,6 +28,7 @@ import os
 import base64
 import logging
 import traceback
+import json
 
 logger = logging.getLogger("zomoto.image_gen")
 
@@ -48,6 +49,27 @@ PROVIDERS_TO_TRY = ["nscale", "fal-ai", None]
 # ── Module-level client (created once, reused across requests) ─────────────────
 _client: "InferenceClient | None" = None
 _working_provider: str | None = "nscale"  # tracks which provider works
+
+# ── Image Caching ─────────────────────────────────────────────────────────────
+CACHE_FILE = ".image_cache.json"
+
+def _load_cache() -> dict:
+    if os.path.exists(CACHE_FILE):
+        try:
+            with open(CACHE_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def _save_cache(cache: dict):
+    try:
+        with open(CACHE_FILE, "w") as f:
+            json.dump(cache, f)
+    except Exception as e:
+        logger.warning("Failed to save image cache: %s", e)
+
+_image_cache = _load_cache()
 
 
 def _get_token() -> str | None:
@@ -82,10 +104,28 @@ def _get_client() -> "InferenceClient | None":
     return _client
 
 
+import time
+
 def _try_generate_with_provider(provider: str | None, token: str, prompt: str):
     """Try generating an image with a specific provider. Returns PIL Image or raises."""
     client = _create_client(provider, token)
-    return client.text_to_image(prompt, model=FLUX_MODEL)
+    last_exc = None
+    
+    # Try up to 3 times per provider to handle rate limits (429) and temporary 503s
+    for attempt in range(3):
+        try:
+            return client.text_to_image(prompt, model=FLUX_MODEL)
+        except Exception as e:
+            last_exc = e
+            error_str = str(e).lower()
+            if "429" in error_str or "too many requests" in error_str or "rate limit" in error_str or "503" in error_str:
+                if attempt < 2:
+                    logger.info("Provider=%s rate limited or unavailable, sleeping 2s (attempt %d/3)...", provider or "default", attempt + 1)
+                    time.sleep(2)
+                    continue
+            raise e
+            
+    raise last_exc
 
 
 def generate_image_bytes(image_prompt: str) -> bytes | None:
@@ -121,7 +161,7 @@ def generate_image_bytes(image_prompt: str) -> bytes | None:
         try:
             logger.info("Generating image (provider=%s): %.80s…",
                          _working_provider or "default", prompt)
-            pil_image = client.text_to_image(prompt, model=FLUX_MODEL)
+            pil_image = _try_generate_with_provider(_working_provider, token, prompt)
             return _pil_to_bytes(pil_image)
         except Exception as exc:
             logger.warning("Image gen failed with provider=%s: %s: %s",
@@ -179,10 +219,22 @@ def generate_image_b64(image_prompt: str) -> str:
         Base64 string (no data-URI prefix) on success, or "" on failure.
         The frontend prepends "data:image/png;base64," itself.
     """
+    prompt_key = image_prompt[:400].strip()
+    if not prompt_key:
+        return ""
+
+    if prompt_key in _image_cache:
+        logger.info("Image found in cache for prompt: %.80s…", prompt_key)
+        return _image_cache[prompt_key]
+
     png_bytes = generate_image_bytes(image_prompt)
     if png_bytes is None:
         return ""
-    return base64.b64encode(png_bytes).decode("utf-8")
+    
+    b64_str = base64.b64encode(png_bytes).decode("utf-8")
+    _image_cache[prompt_key] = b64_str
+    _save_cache(_image_cache)
+    return b64_str
 
 
 def test_image_generation() -> dict:
